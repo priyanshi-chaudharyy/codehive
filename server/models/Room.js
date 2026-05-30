@@ -103,8 +103,7 @@ const roomSchema = new mongoose.Schema(
   }
 );
 
-// Index for fast room lookups
-roomSchema.index({ roomId: 1 });
+// Index for fast lookups
 roomSchema.index({ owner: 1 });
 
 const Room = mongoose.model('Room', roomSchema);
