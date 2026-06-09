@@ -6,10 +6,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { execSync } from 'child_process';
 
 import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import codeRoutes from './routes/codeRoutes.js';
+import githubRoutes from './routes/githubRoutes.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { initializeSocket } from './socket/socketHandler.js';
 
@@ -49,6 +52,46 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/code', codeRoutes);
+app.use('/api/github', githubRoutes);
+
+// --- Web Preview Proxy ---
+// Since terminal containers now use --network host for performance,
+// any port opened in the terminal is directly available on 127.0.0.1
+app.use('/proxy/:roomId/:port', (req, res, next) => {
+  const { roomId, port } = req.params;
+  try {
+    const target = `http://127.0.0.1:${port}`;
+    console.log(`[Proxy] Routing Preview for room ${roomId} -> ${target}`);
+    
+    const proxy = createProxyMiddleware({
+      target,
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        [`^/proxy/${roomId}/${port}`]: '',
+      },
+      logLevel: 'silent',
+      onError: (err, req, res) => {
+        res.status(502).send(`
+          <html><body style="font-family:sans-serif;padding:40px;background:#1a1a2e;color:#e0e0e0">
+            <h2 style="color:#ff6b6b">⚠️ Web Preview: Cannot reach port ${port}</h2>
+            <p>The web server inside your terminal is not reachable. Common fixes:</p>
+            <ol>
+              <li>Make sure your dev server is running (e.g. <code>npm run dev</code>)</li>
+              <li><strong>Bind to 0.0.0.0</strong> — run: <code>npx vite --host 0.0.0.0</code> or <code>npm run dev -- --host 0.0.0.0</code></li>
+              <li>Confirm the port number matches what your server reports</li>
+            </ol>
+            <p style="color:#888">Error: ${err.message}</p>
+          </body></html>
+        `);
+      }
+    });
+
+    return proxy(req, res, next);
+  } catch (err) {
+    return res.status(500).send('Proxy Error: ' + err.message);
+  }
+});
 
 // --- Error Handling ---
 app.use(notFound);

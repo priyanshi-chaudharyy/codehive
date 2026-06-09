@@ -1,142 +1,115 @@
-import axios from 'axios';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
+import util from 'util';
 
-/**
- * Language ID mapping for Judge0 CE API.
- * See: https://ce.judge0.com/languages
- */
-const LANGUAGE_IDS = {
-  javascript: 63,  // Node.js
-  typescript: 74,
-  python: 71,      // Python 3
-  java: 62,
-  cpp: 54,         // C++ (GCC)
-  c: 50,           // C (GCC)
-  csharp: 51,      // C# (Mono)
-  go: 60,
-  rust: 73,
-  ruby: 72,
-  php: 68,
-  swift: 83,
-  kotlin: 78,
+const execPromise = util.promisify(exec);
+
+// Map languages to Docker images and run commands
+const DOCKER_CONFIG = {
+  javascript: { image: 'node:20-alpine', extension: '.js', getCommand: (filePath) => `node ${filePath}` },
+  typescript: { image: 'node:20-alpine', extension: '.ts', getCommand: (filePath) => `npx -y tsx ${filePath}` },
+  python: { image: 'python:3-alpine', extension: '.py', getCommand: (filePath) => `python3 ${filePath}` },
+  java: { image: 'openjdk:21-slim', extension: '.java', getCommand: (filePath) => `java ${filePath}` },
+  cpp: { image: 'gcc:latest', extension: '.cpp', getCommand: (filePath) => `g++ ${filePath} -o out && ./out` },
+  c: { image: 'gcc:latest', extension: '.c', getCommand: (filePath) => `gcc ${filePath} -o out && ./out` },
+  csharp: { image: 'mono:latest', extension: '.cs', getCommand: (filePath) => `csc ${filePath} && mono main.exe` },
+  go: { image: 'golang:alpine', extension: '.go', getCommand: (filePath) => `go run ${filePath}` },
+  rust: { image: 'rust:alpine', extension: '.rs', getCommand: (filePath) => `rustc ${filePath} -o out && ./out` },
+  ruby: { image: 'ruby:3-alpine', extension: '.rb', getCommand: (filePath) => `ruby ${filePath}` },
+  php: { image: 'php:8-cli-alpine', extension: '.php', getCommand: (filePath) => `php ${filePath}` },
+  swift: { image: 'swift:latest', extension: '.swift', getCommand: (filePath) => `swift ${filePath}` },
+  kotlin: { image: 'zenika/kotlin', extension: '.kt', getCommand: (filePath) => `kotlinc ${filePath} -include-runtime -d main.jar && java -jar main.jar` },
 };
 
 /**
- * Mock code executor for development without Judge0 API key.
- * Simulates code execution with a simple eval for JavaScript
- * and returns a mock response for other languages.
- */
-const mockExecute = async (code, language) => {
-  // Simulate execution delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  if (language === 'javascript') {
-    try {
-      // Capture console.log output
-      let output = '';
-      const mockConsole = {
-        log: (...args) => {
-          output += args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ') + '\n';
-        },
-      };
-
-      // Very basic eval — NOT secure, only for dev/demo
-      const fn = new Function('console', code);
-      fn(mockConsole);
-
-      return {
-        stdout: output || '(no output)\n',
-        stderr: '',
-        time: '0.01',
-        memory: 1024,
-        status: 'Accepted',
-      };
-    } catch (err) {
-      return {
-        stdout: '',
-        stderr: err.message,
-        time: '0.00',
-        memory: 0,
-        status: 'Runtime Error',
-      };
-    }
-  }
-
-  // For non-JS languages, return a helpful message
-  return {
-    stdout: `[Mock Executor] Code received (${code.length} chars)\nLanguage: ${language}\n\nTo enable real execution, add your Judge0 API key to .env\n`,
-    stderr: '',
-    time: '0.00',
-    memory: 0,
-    status: 'Accepted',
-  };
-};
-
-/**
- * Execute code using Judge0 CE API.
- * Falls back to mock executor if no API key is configured.
- *
+ * Execute code securely using isolated Docker containers.
+ * 
  * @param {string} code - Source code to execute
- * @param {string} language - Language key (e.g., 'javascript', 'python')
+ * @param {string} language - Language key
  * @returns {Object} { stdout, stderr, time, memory, status }
  */
 export const executeCode = async (code, language) => {
-  const apiKey = process.env.JUDGE0_API_KEY;
-  const apiUrl = process.env.JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com';
-
-  // Use mock executor if no API key
-  if (!apiKey) {
-    console.log('⚠️  No Judge0 API key — using mock executor');
-    return mockExecute(code, language);
+  const config = DOCKER_CONFIG[language];
+  
+  if (!config) {
+    return {
+      stdout: `[Execution Engine] Language '${language}' execution not configured locally.\nSupported languages: ${Object.keys(DOCKER_CONFIG).join(', ')}`,
+      stderr: '',
+      time: '0.00',
+      memory: 0,
+      status: 'Unsupported Language'
+    };
   }
 
-  const languageId = LANGUAGE_IDS[language];
-
-  if (!languageId) {
-    throw new Error(`Unsupported language: ${language}`);
-  }
+  // Create temporary execution directory
+  const runId = Math.random().toString(36).substring(2, 10);
+  const tmpDir = path.join(os.tmpdir(), `codehive_exec_${runId}`);
+  const fileName = `main${config.extension}`;
+  const filePath = path.join(tmpDir, fileName);
 
   try {
-    // Submit code for execution
-    const submitResponse = await axios.post(
-      `${apiUrl}/submissions`,
-      {
-        source_code: Buffer.from(code).toString('base64'),
-        language_id: languageId,
-        stdin: '',
-      },
-      {
-        headers: {
-          'X-RapidAPI-Key': apiKey,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-          'Content-Type': 'application/json',
-        },
-        params: {
-          base64_encoded: true,
-          wait: true,
-          fields: 'stdout,stderr,time,memory,status',
-        },
-      }
-    );
+    await fs.mkdir(tmpDir, { recursive: true });
+    await fs.writeFile(filePath, code);
 
-    const result = submitResponse.data;
+    // Normalize path for Windows Docker Desktop if needed
+    const normalizedTmpDir = tmpDir.replace(/\\/g, '/');
+
+    // Build the docker run command
+    // --rm: remove container after exit
+    // --network none: Disable network access for security
+    // -m 256m: Limit memory
+    // --cpus 0.5: Limit CPU
+    const dockerCmd = `docker run --rm --network none -m 256m --cpus 0.5 -v "${normalizedTmpDir}:/app" -w /app ${config.image} ${config.getCommand(fileName)}`;
+
+    const startTime = process.hrtime();
+    
+    // Execute the command with a 60 second timeout (allows time for Docker to pull images on first run)
+    let stdout = '';
+    let stderr = '';
+    let status = 'Accepted';
+    
+    try {
+      const { stdout: out, stderr: err } = await execPromise(dockerCmd, { timeout: 60000 });
+      stdout = out;
+      stderr = err;
+    } catch (err) {
+      if (err.killed) {
+        status = 'Time Limit Exceeded';
+        stderr = 'Execution timed out (60s limit). If this was the first run for this language, it may be downloading the image. Try again!';
+      } else {
+        status = 'Runtime Error';
+        stdout = err.stdout || '';
+        stderr = err.stderr || err.message;
+      }
+    }
+
+    const diff = process.hrtime(startTime);
+    const timeInSeconds = (diff[0] + diff[1] / 1e9).toFixed(2);
 
     return {
-      stdout: result.stdout
-        ? Buffer.from(result.stdout, 'base64').toString()
-        : '',
-      stderr: result.stderr
-        ? Buffer.from(result.stderr, 'base64').toString()
-        : '',
-      time: result.time || '0.00',
-      memory: result.memory || 0,
-      status: result.status?.description || 'Unknown',
+      stdout,
+      stderr,
+      time: timeInSeconds,
+      memory: 0, // Hard to measure peak memory with simple docker run without stats API
+      status,
     };
   } catch (error) {
-    console.error('Judge0 API error:', error.response?.data || error.message);
-    throw new Error(
-      error.response?.data?.message || 'Code execution failed'
-    );
+    console.error('Docker execution error:', error);
+    return {
+      stdout: '',
+      stderr: error.message || 'Execution failed',
+      time: '0.00',
+      memory: 0,
+      status: 'Internal Error',
+    };
+  } finally {
+    // Cleanup temporary directory
+    try {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    } catch (e) {
+      console.error(`Failed to cleanup temp dir: ${tmpDir}`, e);
+    }
   }
 };
-
-export { LANGUAGE_IDS };

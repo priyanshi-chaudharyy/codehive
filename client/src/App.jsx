@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import EditorPage from './pages/EditorPage';
+import GitHubCallbackPage from './pages/GitHubCallbackPage';
 
 // Components
 import Loader from './components/shared/Loader';
@@ -77,6 +78,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* GitHub OAuth callback */}
+        <Route path="/auth/github/callback" element={<GitHubCallbackPage />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

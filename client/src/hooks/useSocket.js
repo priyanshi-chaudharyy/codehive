@@ -46,6 +46,10 @@ const useSocket = (roomId, handlers = {}) => {
       'file-created': handlersRef.current.onFileCreated,
       'file-deleted': handlersRef.current.onFileDeleted,
       'file-renamed': handlersRef.current.onFileRenamed,
+      'file-moved': handlersRef.current.onFileMoved,
+      'user-active-file-changed': handlersRef.current.onUserActiveFileChanged,
+      'terminal-output': handlersRef.current.onTerminalOutput,
+      'terminal-closed': handlersRef.current.onTerminalClosed,
       'error': handlersRef.current.onError,
     };
 
@@ -91,6 +95,10 @@ const useSocket = (roomId, handlers = {}) => {
             'file-created': 'onFileCreated',
             'file-deleted': 'onFileDeleted',
             'file-renamed': 'onFileRenamed',
+            'file-moved': 'onFileMoved',
+            'user-active-file-changed': 'onUserActiveFileChanged',
+            'terminal-output': 'onTerminalOutput',
+            'terminal-closed': 'onTerminalClosed',
             'error': 'onError',
           }).find(([e]) => e === event)?.[1];
 

@@ -20,14 +20,13 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: false, // Not required for GitHub OAuth users
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // Don't return password by default
     },
     avatar: {
       type: String,
       default: function () {
-        // Generate a random hex color for default avatar
         const colors = [
           '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
           '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
@@ -36,6 +35,31 @@ const userSchema = new mongoose.Schema(
         return colors[Math.floor(Math.random() * colors.length)];
       },
     },
+    avatarUrl: {
+      type: String,
+      default: null, // GitHub profile picture URL
+    },
+    // ─── GitHub OAuth Fields ────────────────────────────────
+    authProvider: {
+      type: String,
+      enum: ['local', 'github'],
+      default: 'local',
+    },
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null for non-GitHub users
+    },
+    githubUsername: {
+      type: String,
+      default: null,
+    },
+    githubAccessToken: {
+      type: String,
+      select: false, // Never return token by default
+      default: null,
+    },
+    // ────────────────────────────────────────────────────────
     rooms: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -48,9 +72,9 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Hash password before saving
+// Hash password before saving (only for local auth)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -58,13 +82,15 @@ userSchema.pre('save', async function (next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false; // GitHub users have no password
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON output
+// Remove sensitive fields from JSON output
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
+  delete user.githubAccessToken;
   return user;
 };
 

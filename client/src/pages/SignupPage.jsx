@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
 import showToast from '../components/shared/Toast';
+import { Github } from 'lucide-react';
 
 const SignupPage = () => {
   const [name, setName] = useState('');
@@ -48,6 +49,28 @@ const SignupPage = () => {
               </div>
               <h2 className="text-2xl font-bold">Create your account</h2>
               <p className="text-surface-400 mt-2">Join CodeHive to start collaborating</p>
+            </div>
+
+            {/* GitHub OAuth Button */}
+            <button
+              onClick={() => {
+                const apiUrl = import.meta.env.VITE_API_URL || '/api';
+                const serverUrl = apiUrl.replace(/\/api\/?$/, '');
+                window.location.href = `${serverUrl}/api/auth/github`;
+              }}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#24292f] hover:bg-[#2f363d] border border-surface-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-black/30 mb-6"
+            >
+              <Github size={20} />
+              Continue with GitHub
+            </button>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-surface-800" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-surface-900 px-3 text-surface-500">or sign up with email</span>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

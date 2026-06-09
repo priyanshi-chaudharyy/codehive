@@ -37,6 +37,7 @@ const EditorToolbar = ({
   onOpenSnapshots,
   onCopyLink,
   onShareSnippet,
+  onPreview,
   isExecuting,
   usersCount = 0,
 }) => {
@@ -112,6 +113,15 @@ const EditorToolbar = ({
         >
           <History size={14} />
           <span className="hidden sm:inline">Snapshots</span>
+        </button>
+
+        <button
+          id="btn-preview"
+          onClick={onPreview}
+          className="btn-secondary !px-3 !py-1.5 text-xs flex items-center gap-1.5 border-hive-500/30"
+          title="Preview web server"
+        >
+          <span className="hidden sm:inline">Web Preview</span>
         </button>
 
         <button

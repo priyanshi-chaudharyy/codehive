@@ -2,6 +2,8 @@ import Room from '../models/Room.js';
 import Message from '../models/Message.js';
 import roomManager from './roomManager.js';
 import otEngine from './otEngine.js';
+import terminalManager from './terminalManager.js';
+import diskManager from '../utils/diskManager.js';
 import { executeCode } from '../utils/codeExecutor.js';
 
 /**
@@ -20,6 +22,30 @@ const getNextColor = () => {
   colorIndex++;
   return color;
 };
+
+// Global map to hold auto-save timeouts for debouncing DB saves
+const autoSaveTimeouts = new Map();
+
+function scheduleDbSave(roomId, fileId, content) {
+  const key = `${roomId}-${fileId}`;
+  if (autoSaveTimeouts.has(key)) {
+    clearTimeout(autoSaveTimeouts.get(key));
+  }
+  autoSaveTimeouts.set(key, setTimeout(async () => {
+    try {
+      const room = await Room.findOne({ roomId });
+      if (room && room.files && room.files.has(fileId)) {
+        const file = room.files.get(fileId);
+        file.content = content;
+        room.files.set(fileId, file);
+        await room.save();
+      }
+      autoSaveTimeouts.delete(key);
+    } catch (err) {
+      console.error('Error auto-saving code to DB:', err);
+    }
+  }, 2000)); // Debounce 2 seconds
+}
 
 /**
  * Initialize all Socket.io event handlers.
@@ -208,6 +234,12 @@ export const initializeSocket = (io) => {
         // Apply to server's code state
         file.content = otEngine.apply(file.content, transformedOp);
 
+        // Sync to physical disk for terminal
+        diskManager.updateFile(roomId, room.files, fileId, file.content);
+
+        // Auto-save to MongoDB (debounced to avoid spamming the DB on every keystroke)
+        scheduleDbSave(roomId, fileId, file.content);
+
         // Record the operation
         const user = room.users.get(socket.id);
         const newVersion = roomManager.addOperation(
@@ -243,6 +275,13 @@ export const initializeSocket = (io) => {
      */
     socket.on('code-sync', ({ roomId, fileId, code }) => {
       roomManager.updateCode(roomId, fileId, code);
+      const room = roomManager.getRoomState(roomId);
+      if (room) {
+        diskManager.updateFile(roomId, room.files, fileId, code);
+      }
+      // Instantly save to DB on a full sync
+      scheduleDbSave(roomId, fileId, code);
+      
       socket.to(roomId).emit('code-full-sync', { fileId, code });
     });
 
@@ -268,10 +307,24 @@ export const initializeSocket = (io) => {
      */
     socket.on('active-file-change', ({ roomId, fileId }) => {
       roomManager.updateActiveFile(roomId, socket.id, fileId);
+      const user = roomManager.getRoomState(roomId)?.users.get(socket.id);
+      socket.to(roomId).emit('user-active-file-changed', {
+        userId: user?.userId,
+        socketId: socket.id,
+        fileId,
+        userName: user?.userName,
+        color: user?.color,
+      });
     });
 
     socket.on('file-created', async ({ roomId, fileId, fileData }) => {
       roomManager.addFile(roomId, fileId, fileData);
+      
+      const roomState = roomManager.getRoomState(roomId);
+      if (roomState) {
+        diskManager.createFile(roomId, roomState.files, fileId);
+      }
+      
       socket.to(roomId).emit('file-created', { fileId, fileData });
       
       try {
@@ -287,6 +340,12 @@ export const initializeSocket = (io) => {
 
     socket.on('file-deleted', async ({ roomId, fileId }) => {
       roomManager.removeFile(roomId, fileId);
+      
+      const roomState = roomManager.getRoomState(roomId);
+      if (roomState) {
+        diskManager.deleteFile(roomId, roomState.files, fileId);
+      }
+      
       socket.to(roomId).emit('file-deleted', { fileId });
       
       try {
@@ -309,6 +368,12 @@ export const initializeSocket = (io) => {
 
     socket.on('file-renamed', async ({ roomId, fileId, newName, newLanguage }) => {
       roomManager.renameFile(roomId, fileId, newName, newLanguage);
+      
+      const roomState = roomManager.getRoomState(roomId);
+      if (roomState) {
+        diskManager.renameFile(roomId, roomState.files, fileId, newName);
+      }
+      
       socket.to(roomId).emit('file-renamed', { fileId, newName, newLanguage });
       
       try {
@@ -322,6 +387,29 @@ export const initializeSocket = (io) => {
         }
       } catch (err) {
         console.error('Error saving file-renamed to DB:', err);
+      }
+    });
+
+    socket.on('file-moved', async ({ roomId, fileId, parentId }) => {
+      roomManager.moveFile(roomId, fileId, parentId);
+      
+      const roomState = roomManager.getRoomState(roomId);
+      if (roomState) {
+        diskManager.moveFile(roomId, roomState.files, fileId);
+      }
+      
+      socket.to(roomId).emit('file-moved', { fileId, parentId });
+      
+      try {
+        const room = await Room.findOne({ roomId });
+        if (room && room.files.has(fileId)) {
+          const file = room.files.get(fileId);
+          file.parentId = parentId;
+          room.files.set(fileId, file);
+          await room.save();
+        }
+      } catch (err) {
+        console.error('Error saving file-moved to DB:', err);
       }
     });
 
@@ -417,12 +505,60 @@ export const initializeSocket = (io) => {
       }
     });
 
+    // ─── TERMINAL EVENTS ────────────────────────────────────────
+
+    socket.on('terminal-start', async ({ roomId, terminalId = 'term-1', cols, rows }) => {
+      const onData = (data) => {
+        io.to(roomId).emit('terminal-output', { terminalId, data });
+      };
+
+      const room = roomManager.getRoomState(roomId);
+      const success = await terminalManager.createTerminal(roomId, terminalId, room?.files, onData, cols, rows);
+      if (success) {
+        // Send history to the requesting user
+        const history = terminalManager.getHistory(roomId, terminalId);
+        if (history) {
+          socket.emit('terminal-output', { terminalId, data: history });
+        }
+      } else {
+        socket.emit('terminal-output', {
+          terminalId,
+          data: '\r\n\x1b[31mFailed to start terminal\x1b[0m\r\n',
+        });
+      }
+    });
+
+    socket.on('terminal-input', ({ roomId, terminalId = 'term-1', data }) => {
+      terminalManager.writeToTerminal(roomId, terminalId, data);
+    });
+
+    socket.on('terminal-resize', ({ roomId, terminalId = 'term-1', cols, rows }) => {
+      terminalManager.resizeTerminal(roomId, terminalId, cols, rows);
+    });
+
+    socket.on('terminal-stop', ({ roomId, terminalId = 'term-1' }) => {
+      terminalManager.destroyTerminal(roomId, terminalId);
+      io.to(roomId).emit('terminal-output', {
+        terminalId,
+        data: '\r\n\x1b[90mTerminal session ended.\x1b[0m\r\n',
+      });
+      io.to(roomId).emit('terminal-closed', { terminalId });
+    });
+
     // ─── DISCONNECT ─────────────────────────────────────────────
 
     socket.on('disconnect', () => {
       const roomId = roomManager.findRoomBySocket(socket.id);
       if (roomId) {
         handleUserLeave(socket, io, roomId);
+        // Auto-destroy terminal if room is empty
+        const roomState = roomManager.getRoomState(roomId);
+        if (!roomState || roomState.users.size === 0) {
+          const terminals = terminalManager.getTerminalsForRoom(roomId);
+          for (const tId of terminals) {
+            terminalManager.destroyTerminal(roomId, tId);
+          }
+        }
       }
       console.log(`🔌 Socket disconnected: ${socket.id}`);
     });

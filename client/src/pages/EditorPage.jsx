@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen, Terminal, GitBranch, Search } from 'lucide-react';
 import { DiffEditor } from '@monaco-editor/react';
 import { useAuth } from '../context/AuthContext';
 import useSocket from '../hooks/useSocket';
@@ -13,11 +13,15 @@ import showToast from '../components/shared/Toast';
 import Loader from '../components/shared/Loader';
 import EditorToolbar from '../components/editor/EditorToolbar';
 import CodeEditor from '../components/editor/CodeEditor';
+import EditorTabs from '../components/editor/EditorTabs';
+import GlobalSearchPanel from '../components/editor/GlobalSearchPanel';
 import OutputPanel from '../components/editor/OutputPanel';
 import ChatPanel from '../components/chat/ChatPanel';
 import VideoPanel from '../components/video/VideoPanel';
 import UserPresence from '../components/users/UserPresence';
 import FileExplorer, { getLanguageFromName } from '../components/editor/FileExplorer';
+import TerminalPanel from '../components/editor/TerminalPanel';
+import GitPanel from '../components/editor/GitPanel';
 import { injectCursorStyles, removeCursorStyles, applyCursorDecoration, clearCursorDecoration } from '../components/users/UserCursor';
 
 const EditorPage = () => {
@@ -30,6 +34,9 @@ const EditorPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isOutputOpen, setIsOutputOpen] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [isGitPanelOpen, setIsGitPanelOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
   const [isSnapshotsOpen, setIsSnapshotsOpen] = useState(false);
   const [diffSnap, setDiffSnap] = useState(null);
@@ -39,15 +46,19 @@ const EditorPage = () => {
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userStatuses, setUserStatuses] = useState({});
+  const [userActiveFiles, setUserActiveFiles] = useState({}); // userId -> { fileId, userName, color }
   
   // File system state
   const [files, setFiles] = useState({
     'main': { name: 'main.js', type: 'file', parentId: null, content: '// Start coding here...\n', language: 'javascript' },
   });
   const [activeFileId, setActiveFileId] = useState('main');
+  const [openTabs, setOpenTabs] = useState(['main']);
+  const activeFileIdRef = useRef(activeFileId);
   const fileContentsRef = useRef({}); // cache file contents
   
   const remoteCursorsRef = useRef({});
+  const terminalContainerRef = useRef(null);
   const localVersionRef = useRef(0);
   const pendingOpsRef = useRef([]);
   const inflightOpRef = useRef(false);
@@ -59,6 +70,7 @@ const EditorPage = () => {
 
   // Keep ref in sync with state for callbacks
   useEffect(() => { isChatOpenRef.current = isChatOpen; }, [isChatOpen]);
+  useEffect(() => { activeFileIdRef.current = activeFileId; }, [activeFileId]);
 
   // Editor hook
   const editorHooks = useEditor({ initialCode: '', initialLanguage: 'javascript' });
@@ -112,6 +124,7 @@ const EditorPage = () => {
         
         if (activeId) {
           setActiveFileId(activeId);
+          setOpenTabs([activeId]);
           editorHooks.setRemoteCode(state.files[activeId].content || '');
           editorHooks.setLanguage(state.files[activeId].language || 'javascript');
           editorHooks.setVersion(state.files[activeId].version || 0);
@@ -121,6 +134,15 @@ const EditorPage = () => {
 
       setUsers(state.users);
       setSnapshots(state.snapshots || []);
+
+      // Initialize userActiveFiles from the users array
+      const activeFilesMap = {};
+      state.users.forEach(u => {
+        if (u.userId !== user._id && u.activeFileId) {
+          activeFilesMap[u.userId] = { fileId: u.activeFileId, userName: u.userName, color: u.color };
+        }
+      });
+      setUserActiveFiles(activeFilesMap);
       
       // Inject cursor styles for initial users
       state.users.forEach((u) => {
@@ -150,6 +172,18 @@ const EditorPage = () => {
         delete remoteCursorsRef.current[data.socketId];
       }
       showToast.info(`${data.userName} left`);
+      // Clean up active file tracking
+      setUserActiveFiles(prev => {
+        const next = { ...prev };
+        const leftUser = data.users ? null : data;
+        // Find userId of the left user and remove
+        Object.keys(next).forEach(uid => {
+          if (!data.users?.find(u => u.userId === uid)) {
+            delete next[uid];
+          }
+        });
+        return next;
+      });
     },
     onCodeUpdate: (data) => {
       if (data.fileId === activeFileId) {
@@ -226,8 +260,11 @@ const EditorPage = () => {
       }
     },
     onCursorUpdate: (data) => {
+      // Always update the users state so "Go to User" has the latest position
+      setUsers(prev => prev.map(u => u.userId === data.userId ? { ...u, cursorPosition: data.position } : u));
+      
       if (data.userId === user._id) return;
-      if (data.fileId !== activeFileId) return; // Ignore cursors from other files
+      if (data.fileId !== activeFileIdRef.current) return; // Ignore cursors from other files
       
       if (!editorHooks.editorRef.current) return;
       const editor = editorHooks.editorRef.current;
@@ -313,6 +350,33 @@ const EditorPage = () => {
         [fileId]: { ...prev[fileId], name: newName, language: newLanguage || prev[fileId].language },
       }));
     },
+    onFileMoved: ({ fileId, parentId }) => {
+      setFiles(prev => ({
+        ...prev,
+        [fileId]: { ...prev[fileId], parentId },
+      }));
+    },
+    onUserActiveFileChanged: ({ userId, fileId, userName, color }) => {
+      setUserActiveFiles(prev => ({
+        ...prev,
+        [userId]: { fileId, userName, color },
+      }));
+    },
+    onTerminalOutput: ({ terminalId, data }) => {
+      console.log('[Terminal DEBUG CLIENT] onTerminalOutput received:', { terminalId, dataLen: data?.length, hasRef: !!terminalContainerRef.current, hasMethod: !!terminalContainerRef.current?.__handleOutput });
+      setIsTerminalOpen(true); // Auto-open terminal when output arrives
+      // Write terminal data to the xterm instance via the forwarded ref
+      if (terminalContainerRef.current?.__handleOutput) {
+        terminalContainerRef.current.__handleOutput(terminalId, data);
+      } else {
+        console.warn('[Terminal DEBUG CLIENT] terminalContainerRef.__handleOutput is missing!');
+      }
+    },
+    onTerminalClosed: ({ terminalId }) => {
+      if (terminalContainerRef.current?.__handleClosed) {
+        terminalContainerRef.current.__handleClosed(terminalId);
+      }
+    }
   });
 
   const processNextOperation = () => {
@@ -395,13 +459,15 @@ const EditorPage = () => {
     }
   };
 
+
+
   const handleEditorMount = (editor, monaco) => {
     editorHooks.handleEditorDidMount(editor, monaco);
     
     // Add cursor tracking
     editor.onDidChangeCursorPosition((e) => {
       emit('cursor-move', {
-        fileId: activeFileId,
+        fileId: activeFileIdRef.current,
         userId: user._id,
         position: { lineNumber: e.position.lineNumber, column: e.position.column }
       });
@@ -442,6 +508,24 @@ const EditorPage = () => {
       showToast.success('Snapshot request sent!');
     } catch (error) {
       showToast.error('Failed to request snapshot');
+    }
+  };
+
+  const handlePreview = () => {
+    const port = window.prompt('Enter the port your web server is running on (e.g., 5174, 3000):', '5174');
+    if (port && !isNaN(port)) {
+      // For local development, open the container port directly.
+      // The Express /proxy/ route doesn't work well with Vite because Vite's HTML
+      // uses absolute paths (/@vite/client, /src/main.jsx) that bypass the proxy prefix.
+      // Direct port access works since Docker maps container ports to the host via -p.
+      const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      if (isLocal) {
+        window.open(`http://localhost:${port}/`, '_blank');
+      } else {
+        // For remote/production deployments, fall back to the proxy route
+        const baseUrl = (import.meta.env.VITE_API_URL || `${window.location.origin}/api`).replace('/api', '');
+        window.open(`${baseUrl}/proxy/${roomId}/${port}/`, '_blank');
+      }
     }
   };
 
@@ -496,6 +580,8 @@ const EditorPage = () => {
     const newFile = files[fileId];
     if (newFile && newFile.type === 'file') {
       setActiveFileId(fileId);
+      setOpenTabs(prev => prev.includes(fileId) ? prev : [...prev, fileId]);
+      activeFileIdRef.current = fileId; // Update ref immediately
       const content = fileContentsRef.current[fileId] ?? newFile.content ?? '';
       editorHooks.setRemoteCode(content);
       if (newFile.language) editorHooks.setLanguage(newFile.language);
@@ -503,14 +589,41 @@ const EditorPage = () => {
       const newVersion = newFile.version || 0;
       editorHooks.setVersion(newVersion);
       localVersionRef.current = newVersion;
-    }
-  }, [activeFileId, files, editorHooks, emit]);
 
-  const handleCreateFile = useCallback((name, parentId) => {
+      // Clear old remote cursors and draw cursors of users in this file
+      const editor = editorHooks.editorRef.current;
+      const monaco = monacoRef.current;
+      if (editor && monaco) {
+        // Clear all existing
+        Object.keys(remoteCursorsRef.current).forEach((socketId) => {
+          clearCursorDecoration(editor, remoteCursorsRef.current[socketId] || []);
+          delete remoteCursorsRef.current[socketId];
+        });
+
+        // Re-draw users in the new file
+        users.forEach(u => {
+          if (u.userId === user._id) return;
+          const userFileId = userActiveFiles[u.userId]?.fileId;
+          if (userFileId === fileId && u.cursorPosition) {
+            injectCursorStyles(u.socketId, u.color, u.userName);
+            remoteCursorsRef.current[u.socketId] = applyCursorDecoration(
+              editor,
+              monaco,
+              u.socketId,
+              u.cursorPosition,
+              []
+            );
+          }
+        });
+      }
+    }
+  }, [activeFileId, files, editorHooks, emit, users, userActiveFiles, user._id]);
+
+  const handleCreateFile = useCallback((name, parentId, initialContent = '') => {
     const id = `file_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const lang = getLanguageFromName(name);
     
-    const newFileData = { name, type: 'file', parentId, content: '', language: lang, version: 0 };
+    const newFileData = { name, type: 'file', parentId, content: initialContent, language: lang, version: 0 };
     
     setFiles(prev => ({
       ...prev,
@@ -523,7 +636,8 @@ const EditorPage = () => {
     const currentCode = editorHooks.getCode();
     fileContentsRef.current[activeFileId] = currentCode;
     setActiveFileId(id);
-    editorHooks.setRemoteCode('');
+    setOpenTabs(prev => [...prev, id]);
+    editorHooks.setRemoteCode(initialContent);
     editorHooks.setLanguage(lang);
     editorHooks.setVersion(0);
     localVersionRef.current = 0;
@@ -541,6 +655,25 @@ const EditorPage = () => {
     }));
     
     emit('file-created', { fileId: id, fileData: newFolderData });
+  }, [emit]);
+
+  const handleMoveFile = useCallback((fileId, targetParentId) => {
+    setFiles(prev => {
+      // Prevent moving folder into itself or its descendants
+      if (fileId === targetParentId) return prev;
+      let p = targetParentId;
+      while (p) {
+        if (p === fileId) return prev; // cyclic
+        p = prev[p]?.parentId;
+      }
+      
+      return {
+        ...prev,
+        [fileId]: { ...prev[fileId], parentId: targetParentId },
+      };
+    });
+    
+    emit('file-moved', { fileId, parentId: targetParentId });
   }, [emit]);
 
   const handleDeleteFile = useCallback((fileId) => {
@@ -566,6 +699,7 @@ const EditorPage = () => {
         const firstFile = Object.entries(prev).find(([, f]) => f.type === 'file');
         if (firstFile) {
           setActiveFileId(firstFile[0]);
+          setOpenTabs(tabs => tabs.filter(t => t !== fileId).concat(tabs.includes(firstFile[0]) ? [] : [firstFile[0]]));
           editorHooks.setRemoteCode(firstFile[1].content || '');
           emit('active-file-change', { fileId: firstFile[0] });
         }
@@ -584,6 +718,62 @@ const EditorPage = () => {
 
     emit('file-renamed', { fileId, newName, newLanguage });
   }, [files, emit]);
+
+  const handleCloseTab = useCallback((fileId) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(id => id !== fileId);
+      if (activeFileId === fileId && newTabs.length > 0) {
+        // If closing active tab, switch to the last tab in the new list
+        handleSelectFile(newTabs[newTabs.length - 1]);
+      } else if (newTabs.length === 0) {
+        // If closing the very last tab
+        setActiveFileId(null);
+        activeFileIdRef.current = null;
+      }
+      return newTabs;
+    });
+  }, [activeFileId, handleSelectFile]);
+
+  const handleSelectMatch = useCallback((fileId, match) => {
+    handleSelectFile(fileId);
+    if (editorHooks.editorRef.current) {
+      setTimeout(() => {
+        const editor = editorHooks.editorRef.current;
+        editor.revealPositionInCenter({ lineNumber: match.lineNumber, column: match.column });
+        editor.setPosition({ lineNumber: match.lineNumber, column: match.column });
+        editor.focus();
+      }, 150);
+    }
+  }, [handleSelectFile, editorHooks.editorRef]);
+
+  // ── Go-to-User Handler ────────────────────────────────────────────
+  const handleGoToUser = useCallback((userId) => {
+    const activeFile = userActiveFiles[userId];
+    if (!activeFile || !activeFile.fileId) {
+      showToast.info('User is not currently editing any file');
+      return;
+    }
+
+    // Switch to the user's file
+    handleSelectFile(activeFile.fileId);
+
+    // Find the user's cursor position from the users array
+    const targetUser = users.find(u => u.userId === userId);
+    if (targetUser?.cursorPosition && editorHooks.editorRef.current) {
+      setTimeout(() => {
+        const editor = editorHooks.editorRef.current;
+        if (editor) {
+          editor.revealPositionInCenter({
+            lineNumber: targetUser.cursorPosition.lineNumber,
+            column: targetUser.cursorPosition.column,
+          });
+        }
+      }, 100); // Small delay to let the file load
+    }
+
+    showToast.info(`Jumped to ${activeFile.userName}'s cursor`);
+  }, [userActiveFiles, users, handleSelectFile, editorHooks.editorRef]);
+
 
   // Connect to socket when room loads
   useEffect(() => {
@@ -642,8 +832,20 @@ const EditorPage = () => {
             <span className="text-xs text-surface-400 hidden sm:inline">{isConnected ? 'Syncing' : 'Offline'}</span>
           </div>
 
+          <button onClick={() => setIsSearchOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isSearchOpen ? 'text-blue-400 bg-blue-900/30' : ''}`} title="Search (Ctrl+Shift+F)">
+            <Search size={18} />
+          </button>
+
           <button onClick={() => rtcHooks.isInCall ? rtcHooks.endCall() : rtcHooks.startCall(user.name)} className={`btn-ghost !p-1.5 ${rtcHooks.isInCall ? 'text-hive-400 bg-hive-900/30' : ''}`} title="Video Call">
             <Video size={18} />
+          </button>
+
+          <button onClick={() => setIsGitPanelOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isGitPanelOpen ? 'text-orange-400 bg-orange-900/30' : ''}`} title="Git">
+            <GitBranch size={18} />
+          </button>
+
+          <button onClick={() => setIsTerminalOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isTerminalOpen ? 'text-emerald-400 bg-emerald-900/30' : ''}`} title="Terminal">
+            <Terminal size={18} />
           </button>
           
           <button onClick={handleToggleChat} className={`btn-ghost !p-1.5 relative ${isChatOpen ? 'text-honey-400 bg-honey-900/30' : ''}`} title="Chat (Ctrl+Shift+C)">
@@ -670,8 +872,39 @@ const EditorPage = () => {
             onCreateFolder={handleCreateFolder}
             onDeleteFile={handleDeleteFile}
             onRenameFile={handleRenameFile}
+            onMoveFile={handleMoveFile}
+            userActiveFiles={userActiveFiles}
           />
         </div>
+
+        {/* Git Panel */}
+        {isGitPanelOpen && (
+          <div className="w-56 flex-col border-r border-surface-800/50 hidden sm:flex shrink-0">
+            <GitPanel
+              isVisible={isGitPanelOpen}
+              onClose={() => setIsGitPanelOpen(false)}
+              roomId={roomId}
+              roomData={roomData}
+              user={user}
+              files={files}
+              onImportComplete={() => {
+                window.location.reload();
+              }}
+            />
+          </div>
+        )}
+
+        {/* Global Search Panel */}
+        {isSearchOpen && (
+          <div className="w-64 flex-col border-r border-surface-800/50 hidden sm:flex shrink-0">
+            <GlobalSearchPanel
+              isVisible={isSearchOpen}
+              onClose={() => setIsSearchOpen(false)}
+              files={files}
+              onSelectMatch={handleSelectMatch}
+            />
+          </div>
+        )}
 
         {/* Center Column - Editor + Video + Output */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -695,22 +928,40 @@ const EditorPage = () => {
             onOpenSnapshots={handleOpenSnapshots}
             onCopyLink={copyRoomLink}
             onShareSnippet={handleShareSnippet}
+            onPreview={handlePreview}
             isExecuting={isExecuting}
             usersCount={users.length}
           />
 
+          {/* Editor Tabs */}
+          <EditorTabs
+            files={files}
+            openTabs={openTabs}
+            activeFileId={activeFileId}
+            onSelectTab={handleSelectFile}
+            onCloseTab={handleCloseTab}
+          />
+
           {/* Editor Wrapper */}
           <div className="flex-1 min-h-0 relative bg-surface-950">
-            <CodeEditor 
-              language={language}
-              onChange={handleEditorChange}
-              onMount={handleEditorMount}
-              onRun={handleRunCode}
-              onSave={handleSaveSnapshot}
-              onShareSnippet={handleShareSnippet}
-              onToggleChat={handleToggleChat}
-              onToggleOutput={() => setIsOutputOpen(prev => !prev)}
-            />
+            {openTabs.length > 0 ? (
+              <CodeEditor 
+                language={language}
+                onChange={handleEditorChange}
+                onMount={handleEditorMount}
+                onRun={handleRunCode}
+                onSave={handleSaveSnapshot}
+                onShareSnippet={handleShareSnippet}
+                onToggleChat={handleToggleChat}
+                onToggleOutput={() => setIsOutputOpen(prev => !prev)}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 select-none">
+                <span className="text-6xl mb-4">🐝</span>
+                <h2 className="text-2xl font-bold">CodeHive</h2>
+                <p className="text-sm">Select a file to start coding</p>
+              </div>
+            )}
           </div>
 
           {/* Output Panel */}
@@ -720,12 +971,28 @@ const EditorPage = () => {
             output={output}
             isExecuting={isExecuting}
           />
+
+          {/* Terminal Panel */}
+          <TerminalPanel
+            ref={terminalContainerRef}
+            isVisible={isTerminalOpen}
+            onClose={() => setIsTerminalOpen(false)}
+            emit={emit}
+            isConnected={isConnected}
+          />
         </div>
 
         {/* Right Column - Chat + Presence */}
         <div className={`flex flex-col border-l border-surface-800 transition-all duration-300 ${isChatOpen ? 'w-72 lg:w-80' : 'w-0 overflow-hidden border-l-0'}`}>
           <div className="h-36 border-b border-surface-800 bg-surface-900/30 overflow-y-auto shrink-0">
-            <UserPresence users={users} currentUserId={user._id} userStatuses={userStatuses} />
+            <UserPresence
+              users={users}
+              currentUserId={user._id}
+              userStatuses={userStatuses}
+              userActiveFiles={userActiveFiles}
+              files={files}
+              onGoToUser={handleGoToUser}
+            />
           </div>
           <div className="flex-1 flex flex-col overflow-hidden bg-surface-900/60">
             <ChatPanel 

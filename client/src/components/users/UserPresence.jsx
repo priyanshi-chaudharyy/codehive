@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react';
+import { Users, Navigation } from 'lucide-react';
 
 /**
  * User presence panel — shows who's online in the room with live status.
@@ -6,8 +6,11 @@ import { Users } from 'lucide-react';
  * @param {Array} users - List of user objects from the room
  * @param {string} currentUserId - Current user's ID to mark "(you)"
  * @param {Object} userStatuses - Map of userId → 'typing' | 'idle' | 'active'
+ * @param {Object} userActiveFiles - Map of userId → { fileId, userName, color }
+ * @param {Object} files - File system map (fileId → { name, ... })
+ * @param {Function} onGoToUser - Callback when clicking a user to jump to their cursor
  */
-const UserPresence = ({ users = [], currentUserId, userStatuses = {} }) => {
+const UserPresence = ({ users = [], currentUserId, userStatuses = {}, userActiveFiles = {}, files = {}, onGoToUser }) => {
   const getStatusIndicator = (userId) => {
     const status = userStatuses[userId];
     if (status === 'typing') {
@@ -30,6 +33,13 @@ const UserPresence = ({ users = [], currentUserId, userStatuses = {} }) => {
     return null;
   };
 
+  const getActiveFileName = (userId) => {
+    const activeFile = userActiveFiles[userId];
+    if (!activeFile || !activeFile.fileId) return null;
+    const file = files[activeFile.fileId];
+    return file?.name || null;
+  };
+
   return (
     <div className="px-3 py-2">
       <div className="flex items-center gap-2 mb-2">
@@ -42,10 +52,23 @@ const UserPresence = ({ users = [], currentUserId, userStatuses = {} }) => {
       <div className="space-y-1">
         {users.map((user) => {
           const status = userStatuses[user.userId];
+          const activeFileName = getActiveFileName(user.userId);
+          const isCurrentUser = user.userId === currentUserId;
+
           return (
             <div
               key={user.socketId || user.userId}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-800/40 transition-colors"
+              className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+                isCurrentUser
+                  ? 'hover:bg-surface-800/40'
+                  : 'hover:bg-surface-800/60 cursor-pointer'
+              }`}
+              onClick={() => {
+                if (!isCurrentUser && onGoToUser) {
+                  onGoToUser(user.userId);
+                }
+              }}
+              title={isCurrentUser ? 'You' : `Click to jump to ${user.userName}'s cursor`}
             >
               {/* Colored status dot */}
               <div className="relative flex-shrink-0">
@@ -66,16 +89,29 @@ const UserPresence = ({ users = [], currentUserId, userStatuses = {} }) => {
                 {user.userName?.charAt(0).toUpperCase()}
               </div>
 
-              {/* Name + status */}
-              <div className="flex flex-col min-w-0">
+              {/* Name + status + active file */}
+              <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-xs text-surface-300 truncate">
                   {user.userName}
-                  {user.userId === currentUserId && (
+                  {isCurrentUser && (
                     <span className="text-surface-600 ml-1">(you)</span>
                   )}
                 </span>
                 {getStatusIndicator(user.userId)}
+                {!isCurrentUser && activeFileName && !userStatuses[user.userId] && (
+                  <span className="text-[10px] text-surface-500 truncate">
+                    editing {activeFileName}
+                  </span>
+                )}
               </div>
+
+              {/* Go-to icon — appears on hover for other users */}
+              {!isCurrentUser && (
+                <Navigation
+                  size={12}
+                  className="opacity-0 group-hover:opacity-100 text-surface-500 group-hover:text-hive-400 transition-all shrink-0"
+                />
+              )}
             </div>
           );
         })}

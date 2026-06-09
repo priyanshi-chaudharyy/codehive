@@ -45,7 +45,7 @@ class RoomManager {
           name: fileData.name,
           type: fileData.type || 'file',
           parentId: fileData.parentId || null,
-          content: fileData.content || '',
+          content: (fileData.content || '').replace(/\r\n/g, '\n'),
           language: fileData.language || 'javascript',
           version: 0,
           operationHistory: []
@@ -137,7 +137,7 @@ class RoomManager {
   updateCode(roomId, fileId, code) {
     const room = this.rooms.get(roomId);
     if (room && room.files.has(fileId)) {
-      room.files.get(fileId).content = code;
+      room.files.get(fileId).content = (code || '').replace(/\r\n/g, '\n');
     }
   }
 
@@ -161,11 +161,22 @@ class RoomManager {
         name: fileData.name,
         type: fileData.type || 'file',
         parentId: fileData.parentId || null,
-        content: fileData.content || '',
+        content: (fileData.content || '').replace(/\r\n/g, '\n'),
         language: fileData.language || 'javascript',
         version: 0,
         operationHistory: []
       });
+    }
+  }
+
+  /**
+   * Move a file to a new parent folder
+   */
+  moveFile(roomId, fileId, parentId) {
+    const room = this.rooms.get(roomId);
+    if (room && room.files.has(fileId)) {
+      const file = room.files.get(fileId);
+      file.parentId = parentId;
     }
   }
 

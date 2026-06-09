@@ -32,7 +32,8 @@ const useEditor = ({ initialCode = '', initialLanguage = 'javascript' } = {}) =>
    */
   const getCode = useCallback(() => {
     const model = editorRef.current?.getModel();
-    return model ? model.getValue() : initialCode;
+    // Force LF line endings to match the server state and prevent OT drift mismatch
+    return model ? model.getValue(1) : initialCode;
   }, [initialCode]);
 
   /**
@@ -43,9 +44,12 @@ const useEditor = ({ initialCode = '', initialLanguage = 'javascript' } = {}) =>
     monacoRef.current = monaco;
 
     // Set initial code if provided
-    if (initialCode) {
-      const model = editor.getModel();
-      if (model && model.getValue() !== initialCode) {
+    const model = editor.getModel();
+    if (model) {
+      // Force LF internally so rangeOffsets align with the server's string length
+      model.setEOL(0 /* monaco.editor.EndOfLineSequence.LF */);
+      
+      if (initialCode && model.getValue() !== initialCode) {
         model.setValue(initialCode);
       }
     }

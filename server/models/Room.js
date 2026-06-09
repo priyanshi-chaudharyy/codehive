@@ -97,6 +97,12 @@ const roomSchema = new mongoose.Schema(
       default: null,
     },
     snapshots: [snapshotSchema],
+    githubRepo: {
+      owner: { type: String, default: null },
+      name: { type: String, default: null },
+      branch: { type: String, default: 'main' },
+      lastSyncedAt: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,

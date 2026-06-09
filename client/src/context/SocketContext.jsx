@@ -54,6 +54,11 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
     });
 
+    // DEBUG: raw listener to verify terminal-output events reach the socket
+    socket.on('terminal-output', (payload) => {
+      console.log('[Terminal DEBUG RAW SOCKET] terminal-output event received:', { terminalId: payload?.terminalId, dataLen: payload?.data?.length });
+    });
+
     socketRef.current = socket;
 
     return () => {
