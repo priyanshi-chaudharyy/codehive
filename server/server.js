@@ -38,6 +38,7 @@ const io = new Server(server, {
 // --- Middleware ---
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
 }));
 app.use(cors(corsOptions));
 app.use(express.json());
