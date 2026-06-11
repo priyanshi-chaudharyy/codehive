@@ -524,6 +524,10 @@ const EditorPage = () => {
         try {
           const url = new URL(apiUrl);
           serverHost = url.hostname;
+          // Bypass Chrome's HSTS by using the raw IP address instead of the duckdns domain
+          if (serverHost === 'codehive-api.duckdns.org') {
+            serverHost = '13.60.167.96';
+          }
         } catch (e) {
           serverHost = window.location.hostname;
         }
