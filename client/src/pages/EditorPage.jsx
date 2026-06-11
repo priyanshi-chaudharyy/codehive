@@ -514,18 +514,24 @@ const EditorPage = () => {
   const handlePreview = () => {
     const port = window.prompt('Enter the port your web server is running on (e.g., 5174, 3000):', '5174');
     if (port && !isNaN(port)) {
-      // For local development, open the container port directly.
-      // The Express /proxy/ route doesn't work well with Vite because Vite's HTML
-      // uses absolute paths (/@vite/client, /src/main.jsx) that bypass the proxy prefix.
-      // Direct port access works since Docker maps container ports to the host via -p.
-      const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-      if (isLocal) {
-        window.open(`http://localhost:${port}/`, '_blank');
+      // Open the container port directly on the server host.
+      // Docker's -p mappings expose container ports on the host machine,
+      // so we can access them directly without a proxy.
+      // This avoids all CSP, path-rewriting, and CORS issues with Vite dev servers.
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      let serverHost = '';
+      if (apiUrl) {
+        try {
+          const url = new URL(apiUrl);
+          serverHost = url.hostname;
+        } catch (e) {
+          serverHost = window.location.hostname;
+        }
       } else {
-        // For remote/production deployments, fall back to the proxy route
-        const baseUrl = (import.meta.env.VITE_API_URL || `${window.location.origin}/api`).replace('/api', '');
-        window.open(`${baseUrl}/proxy/${roomId}/${port}/`, '_blank');
+        serverHost = window.location.hostname;
       }
+      // Use http for direct port access (no SSL on ephemeral Docker ports)
+      window.open(`http://${serverHost}:${port}/`, '_blank');
     }
   };
 
