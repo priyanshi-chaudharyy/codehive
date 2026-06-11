@@ -70,7 +70,13 @@ class DiskManager {
         const absPath = path.join(roomDir, relPath);
 
         if (file.type === 'folder') {
-          await fs.mkdir(absPath, { recursive: true });
+          try {
+            await fs.mkdir(absPath, { recursive: true });
+          } catch (err) {
+            if (err.code !== 'EACCES' && err.code !== 'EPERM') {
+              throw err;
+            }
+          }
         }
       }
 
@@ -81,8 +87,15 @@ class DiskManager {
         if (!relPath) continue;
 
         const absPath = path.join(roomDir, relPath);
-        await fs.mkdir(path.dirname(absPath), { recursive: true });
-        await fs.writeFile(absPath, file.content || '');
+        try {
+          await fs.mkdir(path.dirname(absPath), { recursive: true });
+          await fs.writeFile(absPath, file.content || '');
+        } catch (err) {
+          if (err.code !== 'EACCES' && err.code !== 'EPERM') {
+            throw err;
+          }
+          // Ignore permission errors caused by Docker writing root-owned files
+        }
       }
 
       return roomDir;
