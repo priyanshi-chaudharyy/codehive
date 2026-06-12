@@ -94,11 +94,17 @@ class TerminalManager {
       }
       const normalizedCwd = cwd.replace(/\\/g, '/');
 
+      // Run as the same user as the host Node.js process so Docker
+      // doesn't create root-owned files that block disk sync.
+      const uid = process.getuid ? process.getuid() : 1000;
+      const gid = process.getgid ? process.getgid() : 1000;
+
       const daemonArgs = [
         'run',
         '-d', // Run in background
         '-it',
         '--rm',
+        '--user', `${uid}:${gid}`,
         // Map common dev server ports so they're accessible from the host.
         // NOTE: --network host does NOT work on Docker Desktop (Windows/Mac),
         // so we must use explicit -p mappings.
@@ -115,6 +121,7 @@ class TerminalManager {
         '-v', `codehive-nm-server-${roomId}:/workspace/server/node_modules`,
         '-v', `codehive-nm-client-${roomId}:/workspace/client/node_modules`,
         '-w', '/workspace',
+        '-e', 'HOME=/tmp',  // npm needs a writable HOME for cache
         'node:20-alpine',
         '/bin/sh'
       ];
