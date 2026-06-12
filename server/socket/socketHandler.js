@@ -551,13 +551,18 @@ export const initializeSocket = (io) => {
       const roomId = roomManager.findRoomBySocket(socket.id);
       if (roomId) {
         handleUserLeave(socket, io, roomId);
-        // Auto-destroy terminal if room is empty
+        // Auto-destroy terminal if room is empty (with a grace period for reconnects)
         const roomState = roomManager.getRoomState(roomId);
         if (!roomState || roomState.users.size === 0) {
-          const terminals = terminalManager.getTerminalsForRoom(roomId);
-          for (const tId of terminals) {
-            terminalManager.destroyTerminal(roomId, tId);
-          }
+          setTimeout(() => {
+            const currentRoomState = roomManager.getRoomState(roomId);
+            if (!currentRoomState || currentRoomState.users.size === 0) {
+              const terminals = terminalManager.getTerminalsForRoom(roomId);
+              for (const tId of terminals) {
+                terminalManager.destroyTerminal(roomId, tId);
+              }
+            }
+          }, 30000); // 30 second grace period
         }
       }
       console.log(`🔌 Socket disconnected: ${socket.id}`);
