@@ -85,7 +85,7 @@ class TerminalManager {
       } catch (e) {}
 
       // Always map to the room's workspace directory
-      let cwd = path.join(os.tmpdir(), 'codehive_rooms', roomId);
+      let cwd = path.join(process.cwd(), '..', 'codehive_rooms', roomId);
       if (roomFiles) {
         cwd = await diskManager.syncRoomToDisk(roomId, roomFiles);
       } else {
