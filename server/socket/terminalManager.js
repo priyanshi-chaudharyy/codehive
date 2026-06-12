@@ -117,9 +117,6 @@ class TerminalManager {
         '-p', '8080-8085:8080-8085',
         '--name', roomContainerName,
         '-v', `${normalizedCwd}:/workspace`,
-        '-v', `codehive-nm-root-${roomId}:/workspace/node_modules`,
-        '-v', `codehive-nm-server-${roomId}:/workspace/server/node_modules`,
-        '-v', `codehive-nm-client-${roomId}:/workspace/client/node_modules`,
         '-w', '/workspace',
         '-e', 'HOME=/tmp',  // npm needs a writable HOME for cache
         'node:20-alpine',
