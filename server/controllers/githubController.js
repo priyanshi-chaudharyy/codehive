@@ -162,8 +162,9 @@ export const importRepo = async (req, res, next) => {
       fileCount++;
     }
 
-    // Save to room
-    room.files = filesMap;
+    // Save to room by converting the JavaScript Map to an Object.
+    // Mongoose silently fails to save raw JS Maps when reassigned directly.
+    room.files = Object.fromEntries(filesMap);
     room.githubRepo = {
       owner,
       name: repo,
