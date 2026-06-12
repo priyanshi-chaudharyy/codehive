@@ -56,11 +56,9 @@ class DiskManager {
       await ensureBaseDir();
       const roomDir = path.join(BASE_DIR, roomId);
 
-      try {
-        // Clean up existing directory if it exists
-        await fs.rm(roomDir, { recursive: true, force: true });
-      } catch (err) {}
-
+      // Only ensure the directory exists — NEVER delete it.
+      // Deleting would wipe out node_modules, .env, and everything
+      // the user installed via the terminal (Docker).
       await fs.mkdir(roomDir, { recursive: true });
 
       for (const [fileId, file] of filesMap.entries()) {
