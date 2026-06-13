@@ -84,15 +84,20 @@ class TerminalManager {
         execSync(`docker rm -f ${roomContainerName}`, { stdio: 'ignore' });
       } catch (e) {}
 
-      // Always map to the room's workspace directory
+      const fsP = (await import('fs/promises')).default;
       let cwd = path.join(process.cwd(), '..', 'codehive_rooms', roomId);
       if (roomFiles) {
         cwd = await diskManager.syncRoomToDisk(roomId, roomFiles);
       } else {
-        const fs = (await import('fs/promises')).default;
-        await fs.mkdir(cwd, { recursive: true }).catch(() => {});
+        await fsP.mkdir(cwd, { recursive: true }).catch(() => {});
       }
       const normalizedCwd = cwd.replace(/\\/g, '/');
+
+      const historyDir = path.join(process.cwd(), '..', 'codehive_histories', roomId);
+      await fsP.mkdir(historyDir, { recursive: true }).catch(() => {});
+      const historyFile = path.join(historyDir, '.ash_history');
+      await fsP.appendFile(historyFile, '').catch(() => {});
+      const normalizedHistory = historyFile.replace(/\\/g, '/');
 
       // Run as the same user as the host Node.js process so Docker
       // doesn't create root-owned files that block disk sync.
@@ -117,6 +122,7 @@ class TerminalManager {
         '-p', '8080-8085:8080-8085',
         '--name', roomContainerName,
         '-v', `${normalizedCwd}:/workspace`,
+        '-v', `${normalizedHistory}:/tmp/.ash_history`,
         '-w', '/workspace',
         '-e', 'HOME=/tmp',  // npm needs a writable HOME for cache
         'node:20-alpine',
@@ -136,6 +142,7 @@ class TerminalManager {
     const args = [
       'exec',
       '-it',
+      '-e', 'HISTFILE=/tmp/.ash_history',
       roomContainerName,
       '/bin/sh'
     ];
