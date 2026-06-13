@@ -1,5 +1,6 @@
 import Editor from '@monaco-editor/react';
 import Loader from '../shared/Loader';
+import useAIAutocomplete from '../../hooks/useAIAutocomplete';
 
 /**
  * Monaco Editor wrapper component.
@@ -10,7 +11,10 @@ import Loader from '../shared/Loader';
  *
  * The `defaultValue` prop sets the initial content on mount only.
  */
-const CodeEditor = ({ language, onChange, onMount, onRun, onSave, onShareSnippet, onToggleChat, onToggleOutput }) => {
+const CodeEditor = ({ language, onChange, onMount, onRun, onSave, onShareSnippet, onToggleChat, onToggleOutput, isAIAutocompleteEnabled = true, monacoRef }) => {
+  // Register AI ghost text autocomplete (only if API key exists)
+  useAIAutocomplete(monacoRef, isAIAutocompleteEnabled);
+
   const handleMount = (editor, monaco) => {
     // ── Keyboard Shortcuts ──────────────────────────────────────────────
 

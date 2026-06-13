@@ -97,6 +97,10 @@ const roomSchema = new mongoose.Schema(
       default: null,
     },
     snapshots: [snapshotSchema],
+    whiteboard: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
     githubRepo: {
       owner: { type: String, default: null },
       name: { type: String, default: null },

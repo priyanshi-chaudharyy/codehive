@@ -50,6 +50,9 @@ const useSocket = (roomId, handlers = {}) => {
       'user-active-file-changed': handlersRef.current.onUserActiveFileChanged,
       'terminal-output': handlersRef.current.onTerminalOutput,
       'terminal-closed': handlersRef.current.onTerminalClosed,
+      'whiteboard-update': handlersRef.current.onWhiteboardUpdate,
+      'whiteboard-sync': handlersRef.current.onWhiteboardSync,
+      'whiteboard-clear': handlersRef.current.onWhiteboardClear,
       'error': handlersRef.current.onError,
     };
 
@@ -99,6 +102,9 @@ const useSocket = (roomId, handlers = {}) => {
             'user-active-file-changed': 'onUserActiveFileChanged',
             'terminal-output': 'onTerminalOutput',
             'terminal-closed': 'onTerminalClosed',
+            'whiteboard-update': 'onWhiteboardUpdate',
+            'whiteboard-sync': 'onWhiteboardSync',
+            'whiteboard-clear': 'onWhiteboardClear',
             'error': 'onError',
           }).find(([e]) => e === event)?.[1];
 

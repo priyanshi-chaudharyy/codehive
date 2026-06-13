@@ -545,6 +545,65 @@ export const initializeSocket = (io) => {
       io.to(roomId).emit('terminal-closed', { terminalId });
     });
 
+    // ─── WHITEBOARD EVENTS ───────────────────────────────────────
+
+    /**
+     * User draws/modifies objects on the whiteboard.
+     * Receives the full canvas objects array and broadcasts to others.
+     */
+    socket.on('whiteboard-draw', async ({ roomId, objects }) => {
+      roomManager.updateWhiteboard(roomId, objects);
+      socket.to(roomId).emit('whiteboard-update', { objects });
+
+      // Persist to MongoDB (debounced via the same scheduleDbSave pattern)
+      const wbKey = `${roomId}-whiteboard`;
+      if (autoSaveTimeouts.has(wbKey)) {
+        clearTimeout(autoSaveTimeouts.get(wbKey));
+      }
+      autoSaveTimeouts.set(wbKey, setTimeout(async () => {
+        try {
+          await Room.findOneAndUpdate({ roomId }, { whiteboard: objects });
+          autoSaveTimeouts.delete(wbKey);
+        } catch (err) {
+          console.error('Error saving whiteboard to DB:', err);
+        }
+      }, 2000));
+    });
+
+    /**
+     * User requests current whiteboard state (e.g. on join).
+     */
+    socket.on('whiteboard-sync', async ({ roomId }) => {
+      let objects = roomManager.getWhiteboard(roomId);
+      // If in-memory is empty, try loading from DB
+      if (!objects || objects.length === 0) {
+        try {
+          const dbRoom = await Room.findOne({ roomId }).select('whiteboard').lean();
+          if (dbRoom?.whiteboard?.length > 0) {
+            objects = dbRoom.whiteboard;
+            roomManager.updateWhiteboard(roomId, objects);
+          }
+        } catch (err) {
+          console.error('Error loading whiteboard from DB:', err);
+        }
+      }
+      socket.emit('whiteboard-sync', { objects: objects || [] });
+    });
+
+    /**
+     * User clears the entire whiteboard.
+     */
+    socket.on('whiteboard-clear', async ({ roomId }) => {
+      roomManager.clearWhiteboard(roomId);
+      socket.to(roomId).emit('whiteboard-clear');
+      // Persist clear to DB
+      try {
+        await Room.findOneAndUpdate({ roomId }, { whiteboard: [] });
+      } catch (err) {
+        console.error('Error clearing whiteboard in DB:', err);
+      }
+    });
+
     // ─── DISCONNECT ─────────────────────────────────────────────
 
     socket.on('disconnect', () => {

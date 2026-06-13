@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen, Terminal, GitBranch, Search } from 'lucide-react';
+import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen, Terminal, GitBranch, Search, PenTool, Sparkles } from 'lucide-react';
 import { DiffEditor } from '@monaco-editor/react';
 import { useAuth } from '../context/AuthContext';
 import useSocket from '../hooks/useSocket';
@@ -22,6 +22,8 @@ import UserPresence from '../components/users/UserPresence';
 import FileExplorer, { getLanguageFromName } from '../components/editor/FileExplorer';
 import TerminalPanel from '../components/editor/TerminalPanel';
 import GitPanel from '../components/editor/GitPanel';
+import WhiteboardPanel from '../components/editor/WhiteboardPanel';
+import AIChatPanel from '../components/ai/AIChatPanel';
 import { injectCursorStyles, removeCursorStyles, applyCursorDecoration, clearCursorDecoration } from '../components/users/UserCursor';
 
 const EditorPage = () => {
@@ -39,6 +41,8 @@ const EditorPage = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
   const [isSnapshotsOpen, setIsSnapshotsOpen] = useState(false);
+  const [isWhiteboardMode, setIsWhiteboardMode] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [diffSnap, setDiffSnap] = useState(null);
   const [snapshots, setSnapshots] = useState([]);
   const [isSnapshotsLoading, setIsSnapshotsLoading] = useState(false);
@@ -59,6 +63,7 @@ const EditorPage = () => {
   
   const remoteCursorsRef = useRef({});
   const terminalContainerRef = useRef(null);
+  const whiteboardRef = useRef(null);
   const localVersionRef = useRef(0);
   const pendingOpsRef = useRef([]);
   const inflightOpRef = useRef(false);
@@ -376,7 +381,23 @@ const EditorPage = () => {
       if (terminalContainerRef.current?.__handleClosed) {
         terminalContainerRef.current.__handleClosed(terminalId);
       }
-    }
+    },
+    // ── Whiteboard Events ──
+    onWhiteboardUpdate: (data) => {
+      if (whiteboardRef.current?.__onWhiteboardUpdate) {
+        whiteboardRef.current.__onWhiteboardUpdate(data);
+      }
+    },
+    onWhiteboardSync: (data) => {
+      if (whiteboardRef.current?.__onWhiteboardSync) {
+        whiteboardRef.current.__onWhiteboardSync(data);
+      }
+    },
+    onWhiteboardClear: () => {
+      if (whiteboardRef.current?.__onWhiteboardClear) {
+        whiteboardRef.current.__onWhiteboardClear();
+      }
+    },
   });
 
   const processNextOperation = () => {
@@ -854,8 +875,16 @@ const EditorPage = () => {
             <GitBranch size={18} />
           </button>
 
+          <button onClick={() => setIsWhiteboardMode(prev => !prev)} className={`btn-ghost !p-1.5 ${isWhiteboardMode ? 'text-pink-400 bg-pink-900/30' : ''}`} title="Whiteboard">
+            <PenTool size={18} />
+          </button>
+
           <button onClick={() => setIsTerminalOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isTerminalOpen ? 'text-emerald-400 bg-emerald-900/30' : ''}`} title="Terminal">
             <Terminal size={18} />
+          </button>
+
+          <button onClick={() => setIsAIChatOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isAIChatOpen ? 'text-violet-400 bg-violet-900/30' : ''}`} title="AI Assistant">
+            <Sparkles size={18} />
           </button>
           
           <button onClick={handleToggleChat} className={`btn-ghost !p-1.5 relative ${isChatOpen ? 'text-honey-400 bg-honey-900/30' : ''}`} title="Chat (Ctrl+Shift+C)">
@@ -952,9 +981,17 @@ const EditorPage = () => {
             onCloseTab={handleCloseTab}
           />
 
-          {/* Editor Wrapper */}
+          {/* Editor Wrapper / Whiteboard */}
           <div className="flex-1 min-h-0 relative bg-surface-950">
-            {openTabs.length > 0 ? (
+            {isWhiteboardMode ? (
+              <WhiteboardPanel
+                emit={emit}
+                isConnected={isConnected}
+                onRegisterHandlers={(handlers) => {
+                  whiteboardRef.current = handlers;
+                }}
+              />
+            ) : openTabs.length > 0 ? (
               <CodeEditor 
                 language={language}
                 onChange={handleEditorChange}
@@ -964,6 +1001,8 @@ const EditorPage = () => {
                 onShareSnippet={handleShareSnippet}
                 onToggleChat={handleToggleChat}
                 onToggleOutput={() => setIsOutputOpen(prev => !prev)}
+                monacoRef={monacoRef}
+                isAIAutocompleteEnabled={true}
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 select-none">
@@ -989,11 +1028,23 @@ const EditorPage = () => {
             onClose={() => setIsTerminalOpen(false)}
             emit={emit}
             isConnected={isConnected}
+            onExplainError={(terminalOutput) => {
+              setIsAIChatOpen(true);
+              // Small delay to let the AI panel mount, then inject the error
+              setTimeout(() => {
+                if (window.__codehiveAISend) {
+                  window.__codehiveAISend(
+                    `Please explain the following terminal error and suggest how to fix it:\n\n\`\`\`\n${terminalOutput}\n\`\`\``,
+                    true
+                  );
+                }
+              }, 300);
+            }}
           />
         </div>
 
-        {/* Right Column - Chat + Presence */}
-        <div className={`flex flex-col border-l border-surface-800 transition-all duration-300 ${isChatOpen ? 'w-72 lg:w-80' : 'w-0 overflow-hidden border-l-0'}`}>
+        {/* Right Column - Chat + Presence + AI Chat */}
+        <div className={`flex flex-col border-l border-surface-800 transition-all duration-300 ${(isChatOpen || isAIChatOpen) ? 'w-72 lg:w-80' : 'w-0 overflow-hidden border-l-0'}`}>
           <div className="h-36 border-b border-surface-800 bg-surface-900/30 overflow-y-auto shrink-0">
             <UserPresence
               users={users}
@@ -1005,13 +1056,23 @@ const EditorPage = () => {
             />
           </div>
           <div className="flex-1 flex flex-col overflow-hidden bg-surface-900/60">
-            <ChatPanel 
-              isVisible={true}
-              messages={messages}
-              currentUserId={user._id}
-              onSendMessage={(text) => emit('send-message', { text, userId: user._id, userName: user.name })}
-              onClose={() => setIsChatOpen(false)}
-            />
+            {isAIChatOpen ? (
+              <AIChatPanel
+                isVisible={true}
+                onClose={() => setIsAIChatOpen(false)}
+                getCode={getCode}
+                language={language}
+                activeFileName={files[activeFileId]?.name}
+              />
+            ) : (
+              <ChatPanel 
+                isVisible={true}
+                messages={messages}
+                currentUserId={user._id}
+                onSendMessage={(text) => emit('send-message', { text, userId: user._id, userName: user.name })}
+                onClose={() => setIsChatOpen(false)}
+              />
+            )}
           </div>
         </div>
 

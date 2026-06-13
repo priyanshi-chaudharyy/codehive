@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
-import { Terminal as TerminalIcon, X, Trash2, RotateCcw, Plus } from 'lucide-react';
+import { Terminal as TerminalIcon, X, Trash2, RotateCcw, Plus, Sparkles } from 'lucide-react';
 
 /**
  * Inner Terminal Instance
@@ -59,6 +59,17 @@ const TerminalInstance = forwardRef(({ terminalId, isVisible, emit, isConnected,
       }
     },
     isStarted: () => isStartedRef.current,
+    _getBuffer: () => {
+      if (!terminalRef.current) return '';
+      const buf = terminalRef.current.buffer.active;
+      const lines = [];
+      const start = Math.max(0, buf.cursorY - 50);
+      for (let i = start; i <= buf.cursorY + buf.viewportY; i++) {
+        const line = buf.getLine(i);
+        if (line) lines.push(line.translateToString(true));
+      }
+      return lines.join('\n').trim();
+    },
   }), [terminalId, onStop]);
 
   // ── Auto-reconnect terminal on socket reconnect ──
@@ -259,7 +270,7 @@ TerminalInstance.displayName = 'TerminalInstance';
 // ═══════════════════════════════════════════════════════════════
 // Terminal Panel (Multi-tab container)
 // ═══════════════════════════════════════════════════════════════
-const TerminalPanel = forwardRef(({ isVisible, onClose, emit, isConnected }, ref) => {
+const TerminalPanel = forwardRef(({ isVisible, onClose, emit, isConnected, onExplainError }, ref) => {
   const [terminals, setTerminals] = useState([{ id: 'term-1', name: 'Terminal 1' }]);
   const [activeTab, setActiveTab] = useState('term-1');
   const instanceRefs = useRef({});
@@ -314,6 +325,30 @@ const TerminalPanel = forwardRef(({ isVisible, onClose, emit, isConnected }, ref
     if (instanceRefs.current[activeTab]) instanceRefs.current[activeTab].clear();
   };
 
+  // ── Explain Error: read terminal buffer and send to AI ──
+  const handleExplainError = () => {
+    const instance = instanceRefs.current[activeTab];
+    if (!instance) return;
+    // Read the raw xterm ref from the instance to grab buffer lines
+    // We expose a getBuffer method on the instance
+    let bufferText = '';
+    try {
+      // Access the underlying xterm terminal through the imperative ref chain
+      const termContainer = document.querySelector(`[data-terminal-id="${activeTab}"]`);
+      // Fallback: get visible text from the terminal buffer
+      if (instance._getBuffer) {
+        bufferText = instance._getBuffer();
+      }
+    } catch (e) {
+      console.warn('Could not read terminal buffer:', e);
+    }
+    if (bufferText && onExplainError) {
+      onExplainError(bufferText);
+    } else if (onExplainError) {
+      onExplainError('(Could not read terminal output. Please paste the error manually.)');
+    }
+  };
+
   return (
     <div
       className={`flex flex-col border-t border-surface-800 bg-[#0c0e14] ${!isVisible ? 'hidden' : ''}`}
@@ -355,6 +390,14 @@ const TerminalPanel = forwardRef(({ isVisible, onClose, emit, isConnected }, ref
         </div>
 
         <div className="flex items-center gap-1 pb-1">
+          <button
+            onClick={handleExplainError}
+            className="px-2 py-0.5 text-[11px] font-medium rounded bg-violet-600/20 text-violet-400 hover:bg-violet-600/40 transition-colors flex items-center gap-1"
+            title="Ask AI to explain terminal errors"
+          >
+            <Sparkles size={11} />
+            Explain Error
+          </button>
           <button
             onClick={handleStart}
             className="px-2 py-0.5 text-[11px] font-medium rounded bg-hive-600/20 text-hive-400 hover:bg-hive-600/40 transition-colors"

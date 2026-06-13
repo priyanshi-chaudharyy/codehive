@@ -29,6 +29,7 @@ class RoomManager {
       this.rooms.set(roomId, {
         files: new Map(), // fileId -> { content, language, version, operationHistory }
         users: new Map(), // socketId -> { userId, userName, color, cursorPosition, activeFileId }
+        whiteboard: [],   // Array of serialized Fabric.js objects
       });
     }
     return this.rooms.get(roomId);
@@ -257,6 +258,37 @@ class RoomManager {
         0
       ),
     };
+  }
+
+  // ─── WHITEBOARD ─────────────────────────────────────────────
+
+  /**
+   * Update whiteboard objects for a room.
+   * Replaces the entire whiteboard state (full canvas JSON).
+   */
+  updateWhiteboard(roomId, objects) {
+    const room = this.rooms.get(roomId);
+    if (room) {
+      room.whiteboard = objects;
+    }
+  }
+
+  /**
+   * Get the current whiteboard state for a room.
+   */
+  getWhiteboard(roomId) {
+    const room = this.rooms.get(roomId);
+    return room ? (room.whiteboard || []) : [];
+  }
+
+  /**
+   * Clear the whiteboard for a room.
+   */
+  clearWhiteboard(roomId) {
+    const room = this.rooms.get(roomId);
+    if (room) {
+      room.whiteboard = [];
+    }
   }
 }
 
