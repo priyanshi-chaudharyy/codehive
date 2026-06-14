@@ -69,7 +69,7 @@ If they ask about their code, refer to the code context provided below.`;
 
     conversationParts.push({
       role: 'user',
-      parts: [{ text: userMessage + codeContext }],
+      parts: [{ text: `[System Context: ${systemPrompt}]\n\nUser Request: ${userMessage}${codeContext}` }],
     });
 
     try {
@@ -77,9 +77,6 @@ If they ask about their code, refer to the code context provided below.`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }],
-          },
           contents: conversationParts,
           generationConfig: {
             temperature: 0.7,
