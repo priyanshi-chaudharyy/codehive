@@ -72,7 +72,7 @@ ${textBefore}<CURSOR>${textAfter}
               abortRef.current = controller;
 
               const selectedModel = localStorage.getItem(MODEL_KEY) || 'gemini-1.5-pro';
-              const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
+              const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent`;
 
               const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
                 method: 'POST',

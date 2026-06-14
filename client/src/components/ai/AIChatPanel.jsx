@@ -8,7 +8,7 @@ const MODELS = [
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
-  { id: 'gemini-pro', name: 'Gemini 1.0 Pro' }
+  { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro' }
 ];
 
 /**
@@ -82,7 +82,7 @@ If they ask about their code, refer to the code context provided below.`;
       parts: [{ text: `[System Context: ${systemPrompt}]\n\nUser Request: ${userMessage}${codeContext}` }],
     });
 
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent`;
 
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -108,7 +108,7 @@ If they ask about their code, refer to the code context provided below.`;
     } catch (err) {
       throw err;
     }
-  }, [apiKey, messages, language, activeFileName]);
+  }, [apiKey, messages, language, activeFileName, selectedModel]);
 
   // ── Send message ───────────────────────────────────────────
   const handleSend = async (overrideText = null, isErrorExplain = false) => {
