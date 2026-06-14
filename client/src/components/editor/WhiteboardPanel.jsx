@@ -34,8 +34,8 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
 
   const [activeTool, setActiveTool] = useState('select');
   const [activeColor, setActiveColor] = useState('#ffffff');
+  const [activeFill, setActiveFill] = useState('transparent');
   const [strokeWidth, setStrokeWidth] = useState(3);
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
   // ── Broadcast canvas state to other users ──────────────────
   const broadcastCanvas = useCallback(() => {
@@ -157,14 +157,17 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
       activeObjects.forEach(obj => {
         if (obj.type === 'i-text') {
           obj.set('fill', activeColor);
+        } else if (obj.type === 'path' || obj.type === 'line') {
+          obj.set('stroke', activeColor);
         } else {
           obj.set('stroke', activeColor);
+          obj.set('fill', activeFill);
         }
       });
       canvas.renderAll();
       broadcastCanvas();
     }
-  }, [activeColor, strokeWidth, broadcastCanvas]);
+  }, [activeColor, activeFill, strokeWidth, broadcastCanvas]);
 
   // ── Mouse events for shape drawing ─────────────────────────
   useEffect(() => {
@@ -202,7 +205,7 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
             top: startY,
             width: 0,
             height: 0,
-            fill: 'transparent',
+            fill: activeFill,
             stroke: activeColor,
             strokeWidth: strokeWidth,
             strokeUniform: true,
@@ -213,7 +216,7 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
             top: startY,
             rx: 0,
             ry: 0,
-            fill: 'transparent',
+            fill: activeFill,
             stroke: activeColor,
             strokeWidth: strokeWidth,
             strokeUniform: true,
@@ -408,34 +411,35 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
         {/* Separator */}
         <div className="h-5 w-px bg-surface-700 mx-1" />
 
-        {/* Color picker */}
-        <div className="relative">
-          <button
-            onClick={() => setShowColorPicker(!showColorPicker)}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-surface-400 hover:text-surface-200 hover:bg-surface-800/60 transition-colors"
-            title="Color"
-          >
-            <div
-              className="w-4 h-4 rounded-full border border-surface-600"
-              style={{ backgroundColor: activeColor }}
-            />
-            <Palette size={14} />
-          </button>
+        {/* Stroke Color */}
+        <div className="flex items-center gap-2 text-xs text-surface-400 ml-1">
+          <span className="hidden sm:inline">Stroke:</span>
+          <input
+            type="color"
+            value={activeColor}
+            onChange={(e) => setActiveColor(e.target.value)}
+            className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0"
+            title="Stroke Color"
+          />
+        </div>
 
-          {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 grid grid-cols-5 gap-1.5 animate-slide-down">
-              {COLORS.map(color => (
-                <button
-                  key={color}
-                  onClick={() => { setActiveColor(color); setShowColorPicker(false); }}
-                  className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${
-                    activeColor === color ? 'border-white scale-110' : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-          )}
+        {/* Fill Color */}
+        <div className="flex items-center gap-1 text-xs text-surface-400 ml-2">
+          <span className="hidden sm:inline">Fill:</span>
+          <input
+            type="color"
+            value={activeFill === 'transparent' ? '#1a1a2e' : activeFill}
+            onChange={(e) => setActiveFill(e.target.value)}
+            className="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0"
+            title="Fill Color"
+          />
+          <button
+            onClick={() => setActiveFill('transparent')}
+            className={`px-1.5 py-0.5 rounded text-[10px] ${activeFill === 'transparent' ? 'bg-surface-700 text-white' : 'text-surface-500 hover:bg-surface-800'}`}
+            title="Transparent Fill"
+          >
+            Clear
+          </button>
         </div>
 
         {/* Stroke width */}
