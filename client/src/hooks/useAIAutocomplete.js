@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
 const STORAGE_KEY = 'codehive_gemini_key';
 
 /**
