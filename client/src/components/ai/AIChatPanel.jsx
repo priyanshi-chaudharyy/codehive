@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Sparkles, Send, Settings, X, Trash2, AlertTriangle, Zap } from 'lucide-react';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
 const STORAGE_KEY = 'codehive_gemini_key';
+const MODEL_KEY = 'codehive_gemini_model';
+
+const MODELS = [
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+  { id: 'gemini-pro', name: 'Gemini 1.0 Pro' }
+];
 
 /**
  * AI Code Assistant Chat Panel.
@@ -15,8 +21,10 @@ const AIChatPanel = ({ isVisible, onClose, getCode, language, activeFileName }) 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem(MODEL_KEY) || 'gemini-1.5-pro');
   const [showSettings, setShowSettings] = useState(false);
   const [keyInput, setKeyInput] = useState('');
+  const [modelInput, setModelInput] = useState(selectedModel);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll on new messages
@@ -24,13 +32,15 @@ const AIChatPanel = ({ isVisible, onClose, getCode, language, activeFileName }) 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Save API key
-  const handleSaveKey = () => {
+  // Save API key and Model
+  const handleSaveSettings = () => {
     const trimmed = keyInput.trim();
     if (trimmed) {
       localStorage.setItem(STORAGE_KEY, trimmed);
       setApiKey(trimmed);
     }
+    localStorage.setItem(MODEL_KEY, modelInput);
+    setSelectedModel(modelInput);
     setShowSettings(false);
     setKeyInput('');
   };
@@ -71,6 +81,8 @@ If they ask about their code, refer to the code context provided below.`;
       role: 'user',
       parts: [{ text: `[System Context: ${systemPrompt}]\n\nUser Request: ${userMessage}${codeContext}` }],
     });
+
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
 
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -149,11 +161,11 @@ If they ask about their code, refer to the code context provided below.`;
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-violet-400" />
           <h3 className="text-sm font-semibold text-surface-200">AI Assistant</h3>
-          <span className="badge bg-violet-500/20 text-violet-300 text-[10px]">Gemini Flash</span>
+          <span className="badge bg-violet-500/20 text-violet-300 text-[10px]">{MODELS.find(m => m.id === selectedModel)?.name || 'Gemini'}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { setShowSettings(!showSettings); setKeyInput(apiKey); }}
+            onClick={() => { setShowSettings(!showSettings); setKeyInput(apiKey); setModelInput(selectedModel); }}
             className={`p-1 rounded text-surface-500 hover:text-surface-200 transition-colors ${apiKey ? 'text-emerald-400' : 'text-amber-400'}`}
             title={apiKey ? 'API Key Set ✓' : 'Set API Key'}
           >
@@ -182,10 +194,24 @@ If they ask about their code, refer to the code context provided below.`;
               placeholder="AIza..."
               className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-900 border border-surface-600 text-xs text-white placeholder-surface-500 focus:outline-none focus:border-violet-500"
             />
-            <button onClick={handleSaveKey} className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium transition-colors">
-              Save
-            </button>
           </div>
+          <p className="text-xs text-surface-400 mb-2 mt-3">Select Model:</p>
+          <div className="flex gap-2 mb-3">
+            <select
+              value={modelInput}
+              onChange={(e) => setModelInput(e.target.value)}
+              className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-900 border border-surface-600 text-xs text-white focus:outline-none focus:border-violet-500"
+            >
+              {MODELS.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <button onClick={handleSaveSettings} className="w-full px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium transition-colors">
+            Save Settings
+          </button>
+          
           {apiKey && (
             <button onClick={handleRemoveKey} className="mt-2 text-[11px] text-red-400 hover:text-red-300">
               Remove saved key

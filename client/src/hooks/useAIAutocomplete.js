@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
 const STORAGE_KEY = 'codehive_gemini_key';
+const MODEL_KEY = 'codehive_gemini_model';
 
 /**
  * Hook that registers a Monaco InlineCompletionsProvider powered by Gemini.
@@ -71,6 +70,9 @@ ${textBefore}<CURSOR>${textAfter}
             try {
               const controller = new AbortController();
               abortRef.current = controller;
+
+              const selectedModel = localStorage.getItem(MODEL_KEY) || 'gemini-1.5-pro';
+              const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
 
               const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
                 method: 'POST',
