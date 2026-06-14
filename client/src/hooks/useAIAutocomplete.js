@@ -15,14 +15,15 @@ const useAIAutocomplete = (monacoRef, isEnabled = true) => {
   const abortRef = useRef(null);
 
   useEffect(() => {
-    const monaco = monacoRef?.current;
-    if (!monaco || !isEnabled) return;
+    if (!isEnabled) return;
 
-    // Wait a bit for Monaco to fully initialize
-    const timer = setTimeout(() => {
-      if (providerRef.current) return; // Already registered
+    // Monaco loads asynchronously. We poll until the ref is populated.
+    const interval = setInterval(() => {
+      const monaco = monacoRef?.current;
+      if (monaco && !providerRef.current) {
+        clearInterval(interval);
 
-      const provider = monaco.languages.registerInlineCompletionsProvider(
+        const provider = monaco.languages.registerInlineCompletionsProvider(
         // Register for all languages
         { pattern: '**' },
         {
@@ -137,10 +138,11 @@ ${textBefore}<CURSOR>${textAfter}
       );
 
       providerRef.current = provider;
-    }, 1000);
+      }
+    }, 500);
 
     return () => {
-      clearTimeout(timer);
+      clearInterval(interval);
       if (providerRef.current) {
         providerRef.current.dispose();
         providerRef.current = null;
