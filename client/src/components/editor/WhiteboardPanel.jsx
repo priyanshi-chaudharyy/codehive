@@ -148,6 +148,24 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
     }
   }, [activeTool, activeColor, strokeWidth]);
 
+  // ── Apply color/stroke changes to currently selected objects ──
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length > 0) {
+      activeObjects.forEach(obj => {
+        if (obj.type === 'i-text') {
+          obj.set('fill', activeColor);
+        } else {
+          obj.set('stroke', activeColor);
+        }
+      });
+      canvas.renderAll();
+      broadcastCanvas();
+    }
+  }, [activeColor, strokeWidth, broadcastCanvas]);
+
   // ── Mouse events for shape drawing ─────────────────────────
   useEffect(() => {
     const canvas = fabricRef.current;
@@ -166,7 +184,7 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
       startY = pointer.y;
 
       if (activeTool === 'eraser') {
-        const target = canvas.findTarget(opt.e);
+        const target = opt.target || canvas.findTarget(opt.e);
         if (target) {
           canvas.remove(target);
           canvas.renderAll();
