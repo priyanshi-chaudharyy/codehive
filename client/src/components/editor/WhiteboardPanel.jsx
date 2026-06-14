@@ -125,8 +125,18 @@ const WhiteboardPanel = ({ emit, isConnected, onRegisterHandlers }) => {
 
     if (activeTool === 'pen') {
       canvas.isDrawingMode = true;
-      canvas.freeDrawingBrush.color = activeColor;
-      canvas.freeDrawingBrush.width = strokeWidth;
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.color = activeColor;
+        canvas.freeDrawingBrush.width = strokeWidth;
+      } else {
+        import('fabric').then((fabric) => {
+          if (fabric.PencilBrush) {
+            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+            canvas.freeDrawingBrush.color = activeColor;
+            canvas.freeDrawingBrush.width = strokeWidth;
+          }
+        });
+      }
     } else if (activeTool === 'eraser') {
       canvas.isDrawingMode = false;
       canvas.selection = false;
