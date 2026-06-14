@@ -4,10 +4,10 @@ import { Sparkles, Send, Settings, X, Trash2, AlertTriangle, Zap } from 'lucide-
 const STORAGE_KEY = 'codehive_gemini_key';
 const MODEL_KEY = 'codehive_gemini_model';
 
-const MODELS = [
+const DEFAULT_MODELS = [
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
   { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro' }
 ];
 
@@ -21,11 +21,43 @@ const AIChatPanel = ({ isVisible, onClose, getCode, language, activeFileName }) 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
-  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem(MODEL_KEY) || 'gemini-1.5-pro');
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem(MODEL_KEY) || 'gemini-2.0-flash');
   const [showSettings, setShowSettings] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [modelInput, setModelInput] = useState(selectedModel);
+  const [availableModels, setAvailableModels] = useState(DEFAULT_MODELS);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Fetch available models for this specific API key
+  const fetchAvailableModels = async (keyToTest) => {
+    if (!keyToTest) return;
+    try {
+      setIsFetchingModels(true);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${keyToTest}`);
+      if (!res.ok) throw new Error(`API Error: ${res.status}`);
+      const data = await res.json();
+      const models = data.models
+        .filter(m => m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => {
+          const id = m.name.replace('models/', '');
+          return { id, name: m.displayName || id };
+        });
+      
+      if (models.length > 0) {
+        setAvailableModels(models);
+        // Auto-select first model if current isn't in list
+        if (!models.find(m => m.id === modelInput)) {
+          setModelInput(models[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch models:', err);
+      // Fallback to default models silently
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -82,7 +114,7 @@ If they ask about their code, refer to the code context provided below.`;
       parts: [{ text: `[System Context: ${systemPrompt}]\n\nUser Request: ${userMessage}${codeContext}` }],
     });
 
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent`;
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
 
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -161,11 +193,11 @@ If they ask about their code, refer to the code context provided below.`;
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-violet-400" />
           <h3 className="text-sm font-semibold text-surface-200">AI Assistant</h3>
-          <span className="badge bg-violet-500/20 text-violet-300 text-[10px]">{MODELS.find(m => m.id === selectedModel)?.name || 'Gemini'}</span>
+          <span className="badge bg-violet-500/20 text-violet-300 text-[10px]">{availableModels.find(m => m.id === selectedModel)?.name || 'Gemini'}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { setShowSettings(!showSettings); setKeyInput(apiKey); setModelInput(selectedModel); }}
+            onClick={() => { setShowSettings(!showSettings); setKeyInput(apiKey); setModelInput(selectedModel); if (apiKey && !showSettings) fetchAvailableModels(apiKey); }}
             className={`p-1 rounded text-surface-500 hover:text-surface-200 transition-colors ${apiKey ? 'text-emerald-400' : 'text-amber-400'}`}
             title={apiKey ? 'API Key Set ✓' : 'Set API Key'}
           >
@@ -195,14 +227,23 @@ If they ask about their code, refer to the code context provided below.`;
               className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-900 border border-surface-600 text-xs text-white placeholder-surface-500 focus:outline-none focus:border-violet-500"
             />
           </div>
-          <p className="text-xs text-surface-400 mb-2 mt-3">Select Model:</p>
+          <div className="flex items-center justify-between mb-2 mt-3">
+            <p className="text-xs text-surface-400">Select Model:</p>
+            <button 
+              onClick={(e) => { e.preventDefault(); fetchAvailableModels(keyInput || apiKey); }}
+              disabled={isFetchingModels || (!keyInput && !apiKey)}
+              className="text-[10px] text-violet-400 hover:text-violet-300 disabled:opacity-50 transition-colors"
+            >
+              {isFetchingModels ? 'Fetching...' : 'Fetch available models'}
+            </button>
+          </div>
           <div className="flex gap-2 mb-3">
             <select
               value={modelInput}
               onChange={(e) => setModelInput(e.target.value)}
               className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-900 border border-surface-600 text-xs text-white focus:outline-none focus:border-violet-500"
             >
-              {MODELS.map(m => (
+              {availableModels.map(m => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
