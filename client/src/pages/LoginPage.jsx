@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
 import showToast from '../components/shared/Toast';
-import { Github } from 'lucide-react';
+import Logo from '../components/shared/Logo';
+import { Github, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -43,35 +44,37 @@ const LoginPage = () => {
     <div className="min-h-screen bg-surface-950 flex flex-col">
       <Navbar />
       
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Decorative background */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-96 bg-hive-500/10 rounded-full blur-[100px] pointer-events-none" />
-          
-          <div className="relative glass-card p-8 rounded-2xl shadow-xl shadow-black/50 border border-surface-800/80">
+      <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-hive-600/6 rounded-full blur-[150px] pointer-events-none animate-float" />
+        <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-honey-500/4 rounded-full blur-[130px] pointer-events-none animate-float-delayed" />
+        <div className="absolute inset-0 dot-pattern opacity-10" />
+
+        <div className="w-full max-w-md relative animate-slide-up">
+          <div className="glass-card p-8 md:p-10 rounded-2xl shadow-2xl shadow-black/50 border border-surface-700/30">
+            {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-surface-800 border border-surface-700 mb-4">
-                <span className="text-2xl">🐝</span>
-              </div>
-              <h2 className="text-2xl font-bold">Welcome back to CodeHive</h2>
-              <p className="text-surface-400 mt-2">Sign in to continue your collaborative sessions</p>
+              <Logo size={40} className="mx-auto mb-5" />
+              <h2 className="text-2xl font-bold tracking-tight text-white">Welcome back</h2>
+              <p className="text-surface-400 mt-2 text-sm">Sign in to continue your collaborative sessions</p>
             </div>
 
             {/* GitHub OAuth Button */}
             <button
               onClick={handleGitHubLogin}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#24292f] hover:bg-[#2f363d] border border-surface-700 text-white font-medium transition-all duration-200 hover:shadow-lg hover:shadow-black/30 mb-6"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-surface-600/30 text-white font-medium transition-all duration-300 hover:border-surface-500/50 mb-6 group"
             >
               <Github size={20} />
               Continue with GitHub
+              <ArrowRight size={16} className="opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
             </button>
 
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-surface-800" />
+                <div className="w-full border-t border-surface-700/40" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-surface-900 px-3 text-surface-500">or sign in with email</span>
+                <span className="bg-surface-900/80 px-3 text-surface-500">or sign in with email</span>
               </div>
             </div>
 
@@ -103,15 +106,20 @@ const LoginPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-primary w-full mt-6"
+                className="btn-primary w-full mt-6 flex items-center justify-center gap-2"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </span>
+                ) : 'Sign In'}
               </button>
             </form>
 
             <div className="mt-6 text-center text-sm text-surface-400">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-hive-400 hover:text-hive-300 font-medium">
+              <Link to="/signup" className="text-hive-400 hover:text-hive-300 font-medium transition-colors">
                 Create one now
               </Link>
             </div>

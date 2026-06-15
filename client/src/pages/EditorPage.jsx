@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen, Terminal, GitBranch, Search, PenTool, Sparkles } from 'lucide-react';
+import { MessageSquare, Video, PanelLeftClose, PanelLeftOpen, Terminal, GitBranch, Search, PenTool, Sparkles, FolderOpen, X } from 'lucide-react';
+import Logo from '../components/shared/Logo';
 import { DiffEditor } from '@monaco-editor/react';
 import { useAuth } from '../context/AuthContext';
 import useSocket from '../hooks/useSocket';
@@ -838,56 +839,55 @@ const EditorPage = () => {
   return (
     <div className="h-screen flex flex-col bg-surface-950 text-white overflow-hidden">
       {/* Top Navbar replacement for editor */}
-      <div className="h-12 border-b border-surface-800 flex items-center justify-between px-4 shrink-0 bg-surface-900/80">
+      <div className="h-12 border-b border-surface-700/30 flex items-center justify-between px-4 shrink-0 bg-surface-900/60 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <button onClick={() => setIsFileExplorerOpen(prev => !prev)} className="btn-ghost !p-1.5 hidden sm:inline-flex -ml-2" title="Toggle Explorer">
             {isFileExplorerOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
           </button>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <span className="text-xl">🐝</span>
-            <span className="font-bold text-gradient hidden sm:inline">CodeHive</span>
+            <Logo size={24} withText />
           </div>
-          <div className="h-4 w-px bg-surface-700 mx-1"></div>
+          <div className="h-4 w-px bg-surface-700/40 mx-1"></div>
           <span className="text-sm font-medium truncate max-w-[200px] text-surface-300">
             {roomData?.name || 'Untitled Room'}
           </span>
-          <span className="badge bg-surface-800 text-surface-400 font-mono text-[10px]">
+          <span className="badge bg-surface-800/60 text-surface-400 font-mono text-[10px] hidden sm:inline-flex">
             {roomId}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-1.5">
           {/* Connection status */}
-          <div className="flex items-center gap-1.5 mr-4" title={isConnected ? 'Connected' : 'Disconnected'}>
+          <div className="flex items-center gap-1.5 mr-3" title={isConnected ? 'Connected' : 'Disconnected'}>
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 animate-pulse'}`}></div>
-            <span className="text-xs text-surface-400 hidden sm:inline">{isConnected ? 'Syncing' : 'Offline'}</span>
+            <span className="text-xs text-surface-400 hidden lg:inline">{isConnected ? 'Syncing' : 'Offline'}</span>
           </div>
 
-          <button onClick={() => setIsSearchOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isSearchOpen ? 'text-blue-400 bg-blue-900/30' : ''}`} title="Search (Ctrl+Shift+F)">
+          <button onClick={() => setIsSearchOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isSearchOpen ? 'text-blue-400 bg-blue-500/10' : ''}`} title="Search (Ctrl+Shift+F)">
             <Search size={18} />
           </button>
 
-          <button onClick={() => rtcHooks.isInCall ? rtcHooks.endCall() : rtcHooks.startCall(user.name)} className={`btn-ghost !p-1.5 ${rtcHooks.isInCall ? 'text-hive-400 bg-hive-900/30' : ''}`} title="Video Call">
+          <button onClick={() => rtcHooks.isInCall ? rtcHooks.endCall() : rtcHooks.startCall(user.name)} className={`btn-ghost !p-1.5 ${rtcHooks.isInCall ? 'text-hive-400 bg-hive-500/10' : ''}`} title="Video Call">
             <Video size={18} />
           </button>
 
-          <button onClick={() => setIsGitPanelOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isGitPanelOpen ? 'text-orange-400 bg-orange-900/30' : ''}`} title="Git">
+          <button onClick={() => setIsGitPanelOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isGitPanelOpen ? 'text-orange-400 bg-orange-500/10' : ''}`} title="Git">
             <GitBranch size={18} />
           </button>
 
-          <button onClick={() => setIsWhiteboardMode(prev => !prev)} className={`btn-ghost !p-1.5 ${isWhiteboardMode ? 'text-pink-400 bg-pink-900/30' : ''}`} title="Whiteboard">
+          <button onClick={() => setIsWhiteboardMode(prev => !prev)} className={`btn-ghost !p-1.5 ${isWhiteboardMode ? 'text-pink-400 bg-pink-500/10' : ''}`} title="Whiteboard">
             <PenTool size={18} />
           </button>
 
-          <button onClick={() => setIsTerminalOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isTerminalOpen ? 'text-emerald-400 bg-emerald-900/30' : ''}`} title="Terminal">
+          <button onClick={() => setIsTerminalOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isTerminalOpen ? 'text-emerald-400 bg-emerald-500/10' : ''}`} title="Terminal">
             <Terminal size={18} />
           </button>
 
-          <button onClick={() => setIsAIChatOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isAIChatOpen ? 'text-violet-400 bg-violet-900/30' : ''}`} title="AI Assistant">
+          <button onClick={() => setIsAIChatOpen(prev => !prev)} className={`btn-ghost !p-1.5 ${isAIChatOpen ? 'text-violet-400 bg-violet-500/10' : ''}`} title="AI Assistant">
             <Sparkles size={18} />
           </button>
           
-          <button onClick={handleToggleChat} className={`btn-ghost !p-1.5 relative ${isChatOpen ? 'text-honey-400 bg-honey-900/30' : ''}`} title="Chat (Ctrl+Shift+C)">
+          <button onClick={handleToggleChat} className={`btn-ghost !p-1.5 relative ${isChatOpen ? 'text-honey-400 bg-honey-500/10' : ''}`} title="Chat (Ctrl+Shift+C)">
             <MessageSquare size={18} />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold">
@@ -896,13 +896,18 @@ const EditorPage = () => {
             )}
           </button>
         </div>
+
+        {/* Mobile: connection dot only */}
+        <div className="flex md:hidden items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+        </div>
       </div>
 
       {/* Main Workspace */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden pb-14 md:pb-0">
         
-        {/* File Explorer Panel */}
-        <div className={`flex-col border-r border-surface-800/50 transition-all duration-300 hidden sm:flex ${isFileExplorerOpen ? 'w-52' : 'w-0 overflow-hidden border-r-0'}`}>
+        {/* File Explorer Panel — desktop */}
+        <div className={`flex-col border-r border-surface-700/20 transition-all duration-300 hidden md:flex ${isFileExplorerOpen ? 'w-52' : 'w-0 overflow-hidden border-r-0'}`}>
           <FileExplorer
             files={files}
             activeFileId={activeFileId}
@@ -918,7 +923,7 @@ const EditorPage = () => {
 
         {/* Git Panel */}
         {isGitPanelOpen && (
-          <div className="w-56 flex-col border-r border-surface-800/50 hidden sm:flex shrink-0">
+          <div className="w-56 flex-col border-r border-surface-700/20 hidden md:flex shrink-0">
             <GitPanel
               isVisible={isGitPanelOpen}
               onClose={() => setIsGitPanelOpen(false)}
@@ -935,7 +940,7 @@ const EditorPage = () => {
 
         {/* Global Search Panel */}
         {isSearchOpen && (
-          <div className="w-64 flex-col border-r border-surface-800/50 hidden sm:flex shrink-0">
+          <div className="w-64 flex-col border-r border-surface-700/20 hidden md:flex shrink-0">
             <GlobalSearchPanel
               isVisible={isSearchOpen}
               onClose={() => setIsSearchOpen(false)}
@@ -1005,10 +1010,10 @@ const EditorPage = () => {
                 isAIAutocompleteEnabled={true}
               />
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 select-none">
-                <span className="text-6xl mb-4">🐝</span>
-                <h2 className="text-2xl font-bold">CodeHive</h2>
-                <p className="text-sm">Select a file to start coding</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 select-none">
+                <Logo size={64} className="mb-4" />
+                <h2 className="text-2xl font-bold text-white">CodeHive</h2>
+                <p className="text-sm text-surface-400">Select a file to start coding</p>
               </div>
             )}
           </div>
@@ -1043,9 +1048,9 @@ const EditorPage = () => {
           />
         </div>
 
-        {/* Right Column - Chat + Presence + AI Chat */}
-        <div className={`flex flex-col border-l border-surface-800 transition-all duration-300 ${(isChatOpen || isAIChatOpen) ? 'w-72 lg:w-80' : 'w-0 overflow-hidden border-l-0'}`}>
-          <div className="h-36 border-b border-surface-800 bg-surface-900/30 overflow-y-auto shrink-0">
+        {/* Right Column - Chat + Presence + AI Chat — desktop */}
+        <div className={`hidden md:flex flex-col border-l border-surface-700/20 transition-all duration-300 ${(isChatOpen || isAIChatOpen) ? 'w-72 lg:w-80' : 'w-0 overflow-hidden border-l-0'}`}>
+          <div className="h-36 border-b border-surface-700/20 bg-surface-900/30 overflow-y-auto shrink-0">
             <UserPresence
               users={users}
               currentUserId={user._id}
@@ -1055,7 +1060,7 @@ const EditorPage = () => {
               onGoToUser={handleGoToUser}
             />
           </div>
-          <div className="flex-1 flex flex-col overflow-hidden bg-surface-900/60">
+          <div className="flex-1 flex flex-col overflow-hidden bg-surface-900/40">
             {isAIChatOpen ? (
               <AIChatPanel
                 isVisible={true}
@@ -1077,6 +1082,109 @@ const EditorPage = () => {
         </div>
 
       </div>
+
+      {/* ── Mobile Bottom Navigation Bar ────────────────────────── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-surface-900/95 backdrop-blur-xl border-t border-surface-700/30 flex items-center justify-around px-2">
+        <button
+          onClick={() => setIsFileExplorerOpen(prev => !prev)}
+          className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg transition-colors ${isFileExplorerOpen ? 'text-hive-400' : 'text-surface-400'}`}
+        >
+          <FolderOpen size={20} />
+          <span className="text-[9px] font-medium">Files</span>
+        </button>
+        <button
+          onClick={() => setIsTerminalOpen(prev => !prev)}
+          className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg transition-colors ${isTerminalOpen ? 'text-emerald-400' : 'text-surface-400'}`}
+        >
+          <Terminal size={20} />
+          <span className="text-[9px] font-medium">Terminal</span>
+        </button>
+        <button
+          onClick={() => { setIsAIChatOpen(prev => !prev); setIsChatOpen(false); }}
+          className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg transition-colors ${isAIChatOpen ? 'text-violet-400' : 'text-surface-400'}`}
+        >
+          <Sparkles size={20} />
+          <span className="text-[9px] font-medium">AI</span>
+        </button>
+        <button
+          onClick={() => { handleToggleChat(); setIsAIChatOpen(false); }}
+          className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg transition-colors relative ${isChatOpen ? 'text-honey-400' : 'text-surface-400'}`}
+        >
+          <MessageSquare size={20} />
+          <span className="text-[9px] font-medium">Chat</span>
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setIsWhiteboardMode(prev => !prev)}
+          className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg transition-colors ${isWhiteboardMode ? 'text-pink-400' : 'text-surface-400'}`}
+        >
+          <PenTool size={20} />
+          <span className="text-[9px] font-medium">Draw</span>
+        </button>
+      </div>
+
+      {/* ── Mobile Panel Overlays ───────────────────────────────── */}
+      {/* Mobile File Explorer Overlay */}
+      {isFileExplorerOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-surface-950/70 backdrop-blur-sm" onClick={() => setIsFileExplorerOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-14 w-72 bg-surface-900 border-r border-surface-700/30 shadow-2xl animate-slide-in-left overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-surface-700/20">
+              <span className="text-sm font-semibold text-surface-200">File Explorer</span>
+              <button onClick={() => setIsFileExplorerOpen(false)} className="p-1 rounded hover:bg-surface-800 text-surface-400"><X size={16} /></button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <FileExplorer
+                files={files}
+                activeFileId={activeFileId}
+                onSelectFile={(id) => { handleSelectFile(id); setIsFileExplorerOpen(false); }}
+                onCreateFile={handleCreateFile}
+                onCreateFolder={handleCreateFolder}
+                onDeleteFile={handleDeleteFile}
+                onRenameFile={handleRenameFile}
+                onMoveFile={handleMoveFile}
+                userActiveFiles={userActiveFiles}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Chat / AI Overlay */}
+      {(isChatOpen || isAIChatOpen) && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-surface-950/70 backdrop-blur-sm" onClick={() => { setIsChatOpen(false); setIsAIChatOpen(false); }} />
+          <div className="absolute right-0 top-0 bottom-14 w-full max-w-sm bg-surface-900 border-l border-surface-700/30 shadow-2xl animate-slide-in-right overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-surface-700/20">
+              <span className="text-sm font-semibold text-surface-200">{isAIChatOpen ? 'AI Assistant' : 'Chat'}</span>
+              <button onClick={() => { setIsChatOpen(false); setIsAIChatOpen(false); }} className="p-1 rounded hover:bg-surface-800 text-surface-400"><X size={16} /></button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {isAIChatOpen ? (
+                <AIChatPanel
+                  isVisible={true}
+                  onClose={() => setIsAIChatOpen(false)}
+                  getCode={getCode}
+                  language={language}
+                  activeFileName={files[activeFileId]?.name}
+                />
+              ) : (
+                <ChatPanel 
+                  isVisible={true}
+                  messages={messages}
+                  currentUserId={user._id}
+                  onSendMessage={(text) => emit('send-message', { text, userId: user._id, userName: user.name })}
+                  onClose={() => setIsChatOpen(false)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSnapshotsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

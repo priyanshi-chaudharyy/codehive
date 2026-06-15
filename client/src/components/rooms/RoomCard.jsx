@@ -40,20 +40,20 @@ const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave }) => {
 
   return (
     <div 
-      className="group relative rounded-xl border border-surface-800/60 bg-surface-900/40 hover:bg-surface-800/40 hover:border-surface-700/60 p-5 flex flex-col cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-black/20 overflow-hidden" 
+      className="group relative rounded-2xl border border-surface-700/25 bg-surface-900/30 hover:bg-surface-800/40 hover:border-surface-600/40 p-5 flex flex-col cursor-pointer transition-all duration-500 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1 overflow-hidden" 
       onClick={onClick}
     >
       {/* Subtle gradient on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-hive-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-hive-500/5 via-transparent to-honey-500/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
 
       {/* Delete/Leave Action */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
         <button
           onClick={handleAction}
-          className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors
+          className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all duration-200
             ${showConfirm 
-              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-              : 'bg-surface-800/80 text-surface-400 hover:text-red-400 hover:bg-surface-700'
+              ? 'bg-red-500/15 text-red-400 hover:bg-red-500/25' 
+              : 'bg-surface-800/60 text-surface-400 hover:text-red-400 hover:bg-surface-700/60'
             }`}
           title={isOwner ? "Delete Room" : "Leave Room"}
         >
@@ -65,10 +65,10 @@ const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave }) => {
       <div className="relative">
         <div className="flex items-start justify-between mb-3">
           <div className="pr-10">
-            <h3 className="font-semibold text-base text-white mb-1 truncate group-hover:text-hive-300 transition-colors" title={room.name}>
+            <h3 className="font-semibold text-base text-white mb-1 truncate group-hover:text-hive-300 transition-colors duration-300" title={room.name}>
               {room.name}
             </h3>
-            <div className="flex items-center gap-2 text-xs text-surface-500 font-mono">
+            <div className="flex items-center gap-2 text-xs text-surface-400 font-mono">
               <span>ID: {room.roomId}</span>
               {!room.isPublic && <Lock size={11} className="text-honey-400" />}
             </div>
@@ -78,16 +78,16 @@ const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave }) => {
           </span>
         </div>
         
-        <div className="mt-auto pt-4 border-t border-surface-800/40 flex items-center justify-between">
+        <div className="mt-auto pt-4 border-t border-surface-700/20 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-surface-400">
             <Users size={13} />
             <span className="text-xs">{room.participants?.length || 0} members</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-surface-600">
+            <span className="text-[11px] text-surface-500">
               {new Date(room.updatedAt).toLocaleDateString()}
             </span>
-            <ArrowRight size={14} className="text-surface-600 group-hover:text-hive-400 group-hover:translate-x-0.5 transition-all" />
+            <ArrowRight size={14} className="text-surface-500 group-hover:text-hive-400 group-hover:translate-x-1 transition-all duration-300" />
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Code, LogIn, Lock, Unlock, Search, LayoutGrid, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
+import Logo from '../components/shared/Logo';
 import Loader from '../components/shared/Loader';
 import RoomCard from '../components/rooms/RoomCard';
 import { roomService } from '../services/roomService';
@@ -96,13 +97,16 @@ const DashboardPage = () => {
     <div className="min-h-screen bg-surface-950 flex flex-col">
       <Navbar />
       
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-24 relative">
+        {/* Background effects */}
+        <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-hive-600/4 rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-20 left-0 w-[300px] h-[300px] bg-honey-500/3 rounded-full blur-[120px] pointer-events-none" />
+
         {/* Header section */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10 animate-slide-up">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">👋</span>
-              <h1 className="text-3xl font-bold text-white">Welcome back, {user?.name?.split(' ')[0]}</h1>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back, {user?.name?.split(' ')[0]} 👋</h1>
             </div>
             <p className="text-surface-400">Manage your collaborative coding sessions.</p>
           </div>
@@ -132,13 +136,13 @@ const DashboardPage = () => {
         {rooms.length > 0 && (
           <div className="mb-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
             <div className="relative max-w-md">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-500" />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search rooms..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-800/60 border border-surface-700/50 text-sm text-white placeholder-surface-500 focus:outline-none focus:border-hive-500/50 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-800/40 border border-surface-700/30 text-sm text-white placeholder-surface-400 focus:outline-none focus:border-hive-500/40 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)] transition-all duration-300"
               />
             </div>
           </div>
@@ -305,19 +309,16 @@ const DashboardPage = () => {
         </div>
       )}
       {/* Footer */}
-      <footer className="mt-auto border-t border-surface-800/50 bg-surface-950 py-6">
+      <footer className="mt-auto border-t border-surface-700/20 bg-surface-950 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl opacity-80">🐝</span>
-            <span className="text-sm font-semibold text-surface-400">CodeHive</span>
-          </div>
+          <Logo size={22} withText />
           <p className="text-xs text-surface-500">
             &copy; {new Date().getFullYear()} CodeHive. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-surface-500">
-            <a href="#" className="hover:text-surface-300 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-surface-300 transition-colors">Terms</a>
-            <a href="#" className="hover:text-surface-300 transition-colors">Help</a>
+          <div className="flex items-center gap-4 text-xs text-surface-400">
+            <a href="#" className="hover:text-white transition-colors duration-200">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors duration-200">Terms</a>
+            <a href="#" className="hover:text-white transition-colors duration-200">Help</a>
           </div>
         </div>
       </footer>
