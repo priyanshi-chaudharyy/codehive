@@ -106,7 +106,9 @@ const DashboardPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10 animate-slide-up">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back, {user?.name?.split(' ')[0]} 👋</h1>
+              <h1 className="text-3xl font-bold tracking-tight mb-2 text-white">
+                Welcome back, {user?.username || 'Developer'}
+              </h1>
             </div>
             <p className="text-surface-400">Manage your collaborative coding sessions.</p>
           </div>
@@ -309,16 +311,16 @@ const DashboardPage = () => {
         </div>
       )}
       {/* Footer */}
-      <footer className="mt-auto border-t border-surface-700/20 bg-surface-950 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Logo size={22} withText />
-          <p className="text-xs text-surface-500">
-            &copy; {new Date().getFullYear()} CodeHive. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4 text-xs text-surface-400">
-            <a href="#" className="hover:text-white transition-colors duration-200">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors duration-200">Terms</a>
-            <a href="#" className="hover:text-white transition-colors duration-200">Help</a>
+      <footer className="border-t border-surface-700/30 py-6 mt-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-sm text-surface-500">
+          <div className="flex items-center gap-2">
+            <Logo size={20} />
+            <span className="hidden sm:inline">© {new Date().getFullYear()} CodeHive. All rights reserved.</span>
+          </div>
+          <div className="flex gap-4">
+            <a href="#" className="hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-white transition-colors">Help</a>
           </div>
         </div>
       </footer>

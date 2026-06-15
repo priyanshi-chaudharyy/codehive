@@ -1,3 +1,5 @@
+import Logo from './Logo';
+
 const Loader = ({ size = 'lg', text = '' }) => {
   const sizeClasses = {
     sm: 'w-5 h-5 border-2',
@@ -13,7 +15,7 @@ const Loader = ({ size = 'lg', text = '' }) => {
           className={`${sizeClasses[size]} rounded-full border-surface-700 border-t-hive-500 animate-spin`}
         />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs">🐝</span>
+          <Logo size={16} />
         </div>
       </div>
       {text && (

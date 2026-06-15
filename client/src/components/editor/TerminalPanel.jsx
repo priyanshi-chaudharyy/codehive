@@ -145,7 +145,7 @@ const TerminalInstance = forwardRef(({ terminalId, isVisible, emit, isConnected,
         fitAddonRef.current = fitAddon;
 
         // Welcome message
-        terminal.writeln('\x1b[38;2;245;166;35m🐝 CodeHive Terminal\x1b[0m');
+        terminal.writeln('\x1b[38;2;245;166;35m⚡ CodeHive Terminal\x1b[0m');
         terminal.writeln(`\x1b[90mSession: ${terminalId}\x1b[0m`);
         terminal.writeln('\x1b[90mTip: Select text to copy. Right-click or Ctrl+V to paste.\x1b[0m');
         terminal.writeln('');
