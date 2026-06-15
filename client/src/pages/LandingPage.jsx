@@ -294,20 +294,39 @@ const LandingPage = () => {
 
       {/* ── CTA Section ──────────────────────────────────────────── */}
       <div className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-surface-950 via-hive-950/15 to-surface-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-surface-950 via-hive-950/20 to-surface-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-hive-900/20 via-surface-950/0 to-surface-950/0" />
         <div className="absolute inset-0 dot-pattern opacity-10" />
-        <Reveal className="relative max-w-3xl mx-auto px-4 text-center">
-          <Logo size={48} className="mx-auto mb-8 opacity-60" />
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-8 tracking-tight">
+        
+        {/* Animated Background Elements */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-surface-700/10 rounded-full animate-[spin_60s_linear_infinite]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-surface-700/10 rounded-full animate-[spin_40s_linear_infinite_reverse]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-surface-700/10 rounded-full animate-[spin_20s_linear_infinite]" />
+        
+        <div className="absolute left-[15%] top-[30%] w-24 h-24 bg-hive-500/10 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute right-[20%] bottom-[30%] w-32 h-32 bg-violet-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+
+        <Reveal className="relative max-w-3xl mx-auto px-4 text-center z-10">
+          <div className="relative inline-block mb-8">
+            <div className="absolute -inset-4 bg-hive-500/20 blur-xl rounded-full opacity-50 animate-pulse" />
+            <Logo size={64} className="relative mx-auto drop-shadow-[0_0_15px_rgba(255,193,7,0.3)]" />
+          </div>
+          <h2 className="text-4xl md:text-5xl lg:text-7xl font-extrabold mb-8 tracking-tight">
             Ready to code <span className="text-gradient">together</span>?
           </h2>
-          <p className="text-lg text-surface-300 mb-12 max-w-xl mx-auto">
-            Join developers who collaborate in real-time with CodeHive. Free forever for small teams.
+          <p className="text-lg md:text-xl text-surface-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Join thousands of developers who collaborate in real-time with CodeHive. 
+            Free forever for small teams.
           </p>
-          <Link to="/signup" className="btn-primary inline-flex items-center gap-2 text-lg px-10 py-4 group">
-            Get Started Free
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/signup" className="btn-primary inline-flex items-center justify-center gap-2 text-lg px-10 py-4 group relative overflow-hidden w-full sm:w-auto">
+              <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+              <span className="relative flex items-center gap-2">
+                Get Started Free
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+              </span>
+            </Link>
+          </div>
         </Reveal>
       </div>
 

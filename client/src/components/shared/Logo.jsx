@@ -25,32 +25,33 @@ const Logo = ({ size = 32, withText = false, className = '' }) => {
           </linearGradient>
         </defs>
 
-        {/* The 4 Honeycomb cells - forming the U-shape */}
+        {/* The Honeycomb grid - 3 open tops (Left, Center, Right), 2 closed (Bottom-Left, Bottom-Right) */}
         <path
-          d="M 32.68,45.00 L 41.34,50.00 M 41.34,50.00 L 41.34,60.00 M 32.68,65.00 L 41.34,60.00 M 32.68,65.00 L 24.02,60.00 M 24.02,60.00 L 24.02,50.00 M 24.02,50.00 L 32.68,45.00 M 67.32,45.00 L 75.98,50.00 M 75.98,50.00 L 75.98,60.00 M 75.98,60.00 L 67.32,65.00 M 58.66,60.00 L 67.32,65.00 M 58.66,60.00 L 58.66,50.00 M 58.66,50.00 L 67.32,45.00 M 41.34,60.00 L 50.00,65.00 M 50.00,75.00 L 50.00,65.00 M 50.00,75.00 L 41.34,80.00 M 41.34,80.00 L 32.68,75.00 M 32.68,75.00 L 32.68,65.00 M 67.32,65.00 L 67.32,75.00 M 67.32,75.00 L 58.66,80.00 M 58.66,80.00 L 50.00,75.00 M 50.00,65.00 L 58.66,60.00"
+          d="M 60.39,61.00 L 60.39,49.00 M 50.00,67.00 L 60.39,61.00 M 39.61,61.00 L 50.00,67.00 M 39.61,49.00 L 39.61,61.00 M 29.22,67.00 L 39.61,61.00 M 29.22,67.00 L 18.82,61.00 M 18.82,61.00 L 18.82,49.00 M 81.18,49.00 L 81.18,61.00 M 81.18,61.00 L 70.78,67.00 M 60.39,61.00 L 70.78,67.00 M 50.00,79.00 L 50.00,67.00 M 50.00,79.00 L 39.61,85.00 M 39.61,85.00 L 29.22,79.00 M 29.22,79.00 L 29.22,67.00 M 70.78,67.00 L 70.78,79.00 M 70.78,79.00 L 60.39,85.00 M 60.39,85.00 L 50.00,79.00"
           stroke={`url(#${id}-main)`}
           strokeWidth="6"
           strokeLinejoin="round"
           strokeLinecap="round"
+          fill="none"
         />
 
-        {/* Bee body (shield shape integrated into the center) */}
-        <path d="M 43 38 C 43 28, 57 28, 57 38 C 57 48, 50 56, 50 56 C 50 56, 43 48, 43 38 Z" fill={`url(#${id}-main)`} />
+        {/* Bee body (shield shape integrated exactly into the Center open comb) */}
+        <path d="M 42 38 C 42 25, 58 25, 58 38 C 58 52, 50 61, 50 61 C 50 61, 42 52, 42 38 Z" fill={`url(#${id}-main)`} />
 
         {/* Bee head */}
-        <circle cx="50" cy="22" r="4.5" fill={`url(#${id}-main)`} />
+        <circle cx="50" cy="22" r="5" fill={`url(#${id}-main)`} />
 
-        {/* Bee wings */}
-        <path d="M 41 38 C 25 30, 20 40, 25 50 C 35 50, 42 45, 41 38 Z" fill={`url(#${id}-main)`} opacity="0.9" />
-        <path d="M 59 38 C 75 30, 80 40, 75 50 C 65 50, 58 45, 59 38 Z" fill={`url(#${id}-main)`} opacity="0.9" />
+        {/* Bee wings (integrated into the Left and Right open combs) */}
+        <path d="M 40 38 C 25 25, 10 35, 15 50 C 25 50, 35 45, 40 38 Z" fill={`url(#${id}-main)`} opacity="0.9" />
+        <path d="M 60 38 C 75 25, 90 35, 85 50 C 75 50, 65 45, 60 38 Z" fill={`url(#${id}-main)`} opacity="0.9" />
 
         {/* Antennae */}
-        <path d="M 47 17 Q 40 10 38 12 M 53 17 Q 60 10 62 12" stroke={`url(#${id}-main)`} strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M 46 18 Q 40 10 37 12 M 54 18 Q 60 10 63 12" stroke={`url(#${id}-main)`} strokeWidth="2.5" strokeLinecap="round" fill="none" />
         
         {/* Stripes on body to make it look like a bee (transparent cutouts) */}
-        <line x1="42" y1="36" x2="58" y2="36" stroke="#050506" strokeWidth="2" />
-        <line x1="42.5" y1="41" x2="57.5" y2="41" stroke="#050506" strokeWidth="2" />
-        <line x1="45" y1="46" x2="55" y2="46" stroke="#050506" strokeWidth="2" />
+        <line x1="41" y1="36" x2="59" y2="36" stroke="#050506" strokeWidth="2.5" />
+        <line x1="42.5" y1="42" x2="57.5" y2="42" stroke="#050506" strokeWidth="2.5" />
+        <line x1="45" y1="48" x2="55" y2="48" stroke="#050506" strokeWidth="2.5" />
       </svg>
 
       {withText && (
