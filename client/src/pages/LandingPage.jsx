@@ -132,13 +132,18 @@ const LandingPage = () => {
         <div className="absolute inset-0 dot-pattern opacity-20" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-800/50 border border-surface-700/40 mb-10 animate-fade-in backdrop-blur-xl">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-sm text-surface-200 font-medium">CodeHive v2.0 — Now with AI & Whiteboard</span>
+          {/* Floating UI Elements to fill space */}
+          <div className="absolute top-[15%] left-[10%] hidden lg:flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-surface-900/60 border border-surface-700/40 backdrop-blur-md animate-float-slow shadow-2xl">
+            <Code2 size={24} className="text-hive-400" />
+          </div>
+          <div className="absolute top-[30%] right-[12%] hidden lg:flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-surface-900/60 border border-surface-700/40 backdrop-blur-md animate-float shadow-2xl" style={{ animationDelay: '1s' }}>
+            <Terminal size={20} className="text-emerald-400" />
+          </div>
+          <div className="absolute bottom-[40%] left-[5%] hidden xl:flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-surface-900/60 border border-surface-700/40 backdrop-blur-md animate-float" style={{ animationDelay: '2s' }}>
+            <Zap size={18} className="text-honey-400" />
+          </div>
+          <div className="absolute bottom-[35%] right-[8%] hidden xl:flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-surface-900/60 border border-surface-700/40 backdrop-blur-md animate-float-slow" style={{ animationDelay: '1.5s' }}>
+            <Users size={24} className="text-violet-400" />
           </div>
 
           {/* Main heading */}
