@@ -239,19 +239,6 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* ── Trusted By Section ───────────────────────────────────── */}
-      <div className="border-t border-surface-700/20 bg-gradient-to-b from-surface-900/10 to-surface-900/30 backdrop-blur-sm py-10 overflow-hidden">
-        <Reveal className="max-w-7xl mx-auto px-4 flex flex-col items-center">
-          <p className="text-xs font-semibold text-surface-500 mb-8 uppercase tracking-[0.2em]">Trusted by innovative teams worldwide</p>
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-50 grayscale hover:grayscale-0 transition-all duration-700 w-full">
-             <div className="flex items-center gap-2 font-bold text-xl text-white"><Globe size={28} /> GlobalTech</div>
-             <div className="flex items-center gap-2 font-bold text-xl text-white"><Shield size={28} /> SecureSys</div>
-             <div className="flex items-center gap-2 font-bold text-xl text-white"><Zap size={28} /> FastCorp</div>
-             <div className="flex items-center gap-2 font-bold text-xl text-white"><Cpu size={28} /> NexusAI</div>
-          </div>
-        </Reveal>
-      </div>
-
       {/* ── Stats Bar ────────────────────────────────────────────── */}
       <div className="border-y border-surface-700/20 bg-surface-900/30 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
