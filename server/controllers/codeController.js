@@ -1,5 +1,6 @@
 import { executeCode } from '../utils/codeExecutor.js';
 import Room from '../models/Room.js';
+import Activity from '../models/Activity.js';
 
 /**
  * @desc    Execute code using Judge0 API (or mock executor)
@@ -58,6 +59,17 @@ export const saveSnapshot = async (req, res, next) => {
     // Update current code state
     room.code = code;
     await room.save();
+
+    try {
+      await Activity.create({
+        room: room._id,
+        user: req.user._id,
+        type: 'snapshot_saved',
+        description: 'saved a code snapshot'
+      });
+    } catch (activityErr) {
+      console.error('Error logging snapshot activity:', activityErr);
+    }
 
     res.json({
       success: true,

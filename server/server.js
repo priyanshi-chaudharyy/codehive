@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import codeRoutes from './routes/codeRoutes.js';
 import githubRoutes from './routes/githubRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import { initializeSocket } from './socket/socketHandler.js';
 
@@ -54,6 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/code', codeRoutes);
 app.use('/api/github', githubRoutes);
+app.use('/api/users', userRoutes);
 
 // --- Web Preview Proxy ---
 // Since terminal containers now use --network host for performance,

@@ -73,6 +73,7 @@ export default {
         'shimmer': 'shimmer 3s ease-in-out infinite',
         'gradient-rotate': 'gradientRotate 4s linear infinite',
         'border-glow': 'borderGlow 3s ease-in-out infinite',
+        'scroll': 'scroll 20s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -131,6 +132,10 @@ export default {
         borderGlow: {
           '0%, 100%': { borderColor: 'rgba(99, 102, 241, 0.2)' },
           '50%': { borderColor: 'rgba(99, 102, 241, 0.5)' },
+        },
+        scroll: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
       },
       backdropBlur: {

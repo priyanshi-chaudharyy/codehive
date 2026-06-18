@@ -104,6 +104,22 @@ const EditorPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, navigate]);
 
+  // Track time coded by pinging server every 60s
+  useEffect(() => {
+    if (!roomId || !user) return;
+    
+    const ping = () => {
+      fetch('/api/users/ping', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      }).catch(err => console.error('Ping failed:', err));
+    };
+
+    ping(); // initial ping
+    const interval = setInterval(ping, 60000);
+    return () => clearInterval(interval);
+  }, [roomId, user]); // eslint-disable-next-line react-hooks/exhaustive-deps
+
   // Socket handlers
   const { emit, isConnected } = useSocket(roomId, {
     onRoomState: (state) => {

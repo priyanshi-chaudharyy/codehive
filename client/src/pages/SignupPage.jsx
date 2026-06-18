@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/shared/Navbar';
 import showToast from '../components/shared/Toast';
 import Logo from '../components/shared/Logo';
-import { Github, ArrowRight } from 'lucide-react';
+import { Github, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const SignupPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const { signup } = useAuth();
@@ -105,15 +106,24 @@ const SignupPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-surface-300 mb-1.5">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-200 transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button

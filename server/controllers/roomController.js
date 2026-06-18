@@ -1,5 +1,7 @@
 import Room from '../models/Room.js';
 import User from '../models/User.js';
+import Activity from '../models/Activity.js';
+import roomManager from '../socket/roomManager.js';
 
 /**
  * @desc    Create a new room
@@ -29,6 +31,14 @@ export const createRoom = async (req, res, next) => {
       $addToSet: { rooms: room._id },
     });
 
+    // Log activity
+    await Activity.create({
+      room: room._id,
+      user: req.user._id,
+      type: 'room_created',
+      description: 'created the room'
+    });
+
     res.status(201).json({
       success: true,
       room,
@@ -54,10 +64,19 @@ export const getRooms = async (req, res, next) => {
       .populate('owner', 'name email avatar')
       .sort({ updatedAt: -1 });
 
+    const user = await User.findById(req.user._id);
+    const starredSet = new Set((user.starredRooms || []).map(id => id.toString()));
+
+    const roomsWithDetails = rooms.map(room => {
+      const isStarred = starredSet.has(room._id.toString());
+      const onlineCount = roomManager.getRoomState(room.roomId)?.users?.size || 0;
+      return { ...room.toJSON(), isStarred, onlineCount };
+    });
+
     res.json({
       success: true,
-      count: rooms.length,
-      rooms,
+      count: roomsWithDetails.length,
+      rooms: roomsWithDetails,
     });
   } catch (error) {
     next(error);
@@ -110,21 +129,35 @@ export const joinRoom = async (req, res, next) => {
       throw new Error('Incorrect room password');
     }
 
-    // Check if user is already a participant
-    const isAlreadyIn = room.participants.some(
-      (p) => p.userId.toString() === req.user._id.toString()
+    // Use atomic update to prevent race conditions if user double-clicks
+    const updatedRoom = await Room.findOneAndUpdate(
+      { 
+        _id: room._id, 
+        'participants.userId': { $ne: req.user._id } 
+      },
+      {
+        $push: {
+          participants: {
+            userId: req.user._id,
+            name: req.user.name,
+          }
+        }
+      },
+      { new: true }
     );
 
-    if (!isAlreadyIn) {
-      room.participants.push({
-        userId: req.user._id,
-        name: req.user.name,
-      });
-      await room.save();
-
+    if (updatedRoom) {
       // Add room to user's rooms list
       await User.findByIdAndUpdate(req.user._id, {
         $addToSet: { rooms: room._id },
+      });
+
+      // Log activity
+      await Activity.create({
+        room: room._id,
+        user: req.user._id,
+        type: 'room_joined',
+        description: 'joined the room'
       });
     }
 
@@ -167,6 +200,39 @@ export const deleteRoom = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Room deleted',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Toggle star status for a room
+ * @route   PUT /api/rooms/:roomId/star
+ * @access  Private
+ */
+export const toggleStarRoom = async (req, res, next) => {
+  try {
+    const room = await Room.findOne({ roomId: req.params.roomId });
+    if (!room) {
+      res.status(404);
+      throw new Error('Room not found');
+    }
+
+    const user = await User.findById(req.user._id);
+    const isStarred = user.starredRooms.includes(room._id);
+
+    if (isStarred) {
+      user.starredRooms.pull(room._id);
+    } else {
+      user.starredRooms.push(room._id);
+    }
+    
+    await user.save();
+
+    res.json({
+      success: true,
+      isStarred: !isStarred,
     });
   } catch (error) {
     next(error);

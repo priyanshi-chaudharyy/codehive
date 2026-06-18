@@ -66,6 +66,16 @@ const userSchema = new mongoose.Schema(
         ref: 'Room',
       },
     ],
+    starredRooms: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Room',
+      },
+    ],
+    totalTimeCoded: {
+      type: Number,
+      default: 0, // Stored in seconds
+    },
   },
   {
     timestamps: true,

@@ -1,5 +1,6 @@
 import Room from '../models/Room.js';
 import Message from '../models/Message.js';
+import Activity from '../models/Activity.js';
 import roomManager from './roomManager.js';
 import otEngine from './otEngine.js';
 import terminalManager from './terminalManager.js';
@@ -171,6 +172,17 @@ export const initializeSocket = (io) => {
             savedBy: userId,
           });
           await room.save();
+          
+          try {
+            await Activity.create({
+              room: room._id,
+              user: userId,
+              type: 'snapshot_saved',
+              description: 'saved a code snapshot'
+            });
+          } catch (activityErr) {
+            console.error('Error logging snapshot activity:', activityErr);
+          }
           
           socket.emit('snapshot-saved', { success: true });
           socket.to(roomId).emit('new-snapshot', room.snapshots[room.snapshots.length - 1]);

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Code2, Users, Zap, Video, Terminal, Shield, Globe, Sparkles, Cpu, Paintbrush } from 'lucide-react';
+import { ArrowRight, Code2, Users, Zap, Video, Terminal, Shield, Globe, Sparkles, Cpu, Paintbrush, Github, Twitter, Instagram, MousePointer2 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/shared/Navbar';
 import Logo from '../components/shared/Logo';
@@ -59,9 +59,144 @@ const ParticleField = () => (
     <div className="absolute bottom-20 left-[25%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[140px] animate-float-slow" />
     {/* Secondary accents */}
     <div className="absolute top-[60%] right-[30%] w-[300px] h-[300px] bg-hive-400/4 rounded-full blur-[120px] animate-float" />
-    <div className="absolute top-10 left-[50%] w-[200px] h-[200px] bg-violet-500/6 rounded-full blur-[100px] animate-float-slow" />
   </div>
 );
+
+/* ── Interactive Right Sidebar Sequence ─────────────────────────── */
+const SidebarSequence = () => {
+  const [step, setStep] = useState(0);
+  const [typedChat, setTypedChat] = useState('');
+  const [typedAi, setTypedAi] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+
+  const chatMessage = "Let's go! I'm looking at the logic now.";
+  const aiQuery = "Explain this code to me.";
+  const aiAnswer = "This is a recursive Fibonacci function. It calls itself to calculate the n-th number. Note that without memoization, its time complexity is O(2^n).";
+
+  useEffect(() => {
+    let t = 0;
+    const timers = [];
+    const schedule = (delay, cb) => {
+      t += delay;
+      timers.push(setTimeout(cb, t));
+    };
+
+    const runSequence = () => {
+      setStep(0); setTypedChat(''); setTypedAi(''); setAiResponse('');
+      
+      schedule(2000, () => setStep(1)); // Start typing chat
+      
+      for(let i=1; i<=chatMessage.length; i++) {
+        schedule(40, () => setTypedChat(chatMessage.slice(0, i)));
+      }
+      schedule(800, () => setStep(2)); // Message sent
+      schedule(2000, () => setStep(3)); // Switch to AI tab
+      schedule(1000, () => setStep(4)); // Start typing AI query
+
+      for(let i=1; i<=aiQuery.length; i++) {
+        schedule(50, () => setTypedAi(aiQuery.slice(0, i)));
+      }
+      schedule(800, () => setStep(5)); // Query sent
+
+      for(let i=1; i<=aiAnswer.length; i++) {
+        schedule(30, () => setAiResponse(aiAnswer.slice(0, i)));
+      }
+      
+      schedule(6000, () => runSequence());
+    };
+
+    runSequence();
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="w-72 border-l border-surface-700/20 bg-surface-900/60 hidden lg:flex flex-col relative overflow-hidden">
+      <div className="flex items-center border-b border-surface-700/20">
+        <div className={`flex-1 px-3 py-3 text-[10px] font-semibold tracking-wider uppercase text-center border-r border-surface-700/20 transition-colors ${step < 3 ? 'bg-surface-800/60 text-white' : 'text-surface-500'}`}>Chat</div>
+        <div className="flex-1 px-3 py-3 text-[10px] text-surface-500 font-semibold tracking-wider uppercase text-center border-r border-surface-700/20">Video</div>
+        <div className={`flex-1 px-3 py-3 text-[10px] font-semibold tracking-wider uppercase text-center transition-colors ${step >= 3 ? 'bg-surface-800/60 text-hive-400' : 'text-surface-500'}`}>AI</div>
+      </div>
+      
+      <div className="flex-1 p-4 flex flex-col justify-end space-y-4">
+        {step < 3 ? (
+          <>
+            <div className="flex flex-col items-start animate-fade-in">
+              <span className="text-[10px] text-surface-500 font-medium mb-1">Alice</span>
+              <span className="bg-surface-800 px-3 py-2.5 rounded-xl rounded-tl-sm text-surface-200 text-xs shadow-sm">Ready to pair on this? 🚀</span>
+            </div>
+            {(step >= 1) && (
+              <div className="flex flex-col items-end animate-fade-in">
+                <span className="text-[10px] text-surface-500 font-medium mb-1">You</span>
+                <span className="bg-hive-600/30 border border-hive-500/20 px-3 py-2.5 rounded-xl rounded-tr-sm text-hive-100 text-xs shadow-sm max-w-[90%] text-right">
+                  {typedChat}{step === 1 && <span className="animate-pulse">|</span>}
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {(step >= 4) && (
+              <div className="flex flex-col items-end animate-fade-in">
+                <span className="text-[10px] text-surface-500 font-medium mb-1">You</span>
+                <span className="bg-surface-800 px-3 py-2.5 rounded-xl rounded-tr-sm text-surface-200 text-xs shadow-sm max-w-[90%] text-right">
+                  {typedAi}{step === 4 && <span className="animate-pulse">|</span>}
+                </span>
+              </div>
+            )}
+            {(step >= 5) && (
+              <div className="flex flex-col items-start animate-fade-in">
+                <span className="text-[10px] text-hive-400 font-medium mb-1 flex items-center gap-1"><Cpu size={10}/> AI Assistant</span>
+                <span className="bg-hive-600/10 border border-hive-500/10 px-3 py-2.5 rounded-xl rounded-tl-sm text-hive-100 text-xs shadow-sm leading-relaxed">
+                  {aiResponse}{step === 5 && aiResponse.length < aiAnswer.length && <span className="animate-pulse">|</span>}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Animated Cursor moving towards AI tab */}
+      <div 
+        className="absolute z-50 transition-all duration-1000 ease-in-out pointer-events-none" 
+        style={{ 
+          top: step >= 3 ? '12px' : '80%', 
+          left: step >= 3 ? '85%' : '50%',
+          opacity: step === 2 || step === 3 ? 1 : 0 
+        }}
+      >
+        <MousePointer2 size={20} className="text-white drop-shadow-lg" fill="#fff" />
+      </div>
+    </div>
+  );
+};
+
+/* ── Language Marquee ───────────────────────────────────────────── */
+const LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'Rust', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'C#', 'SQL', 'HTML/CSS'];
+
+const LanguageMarquee = () => {
+  return (
+    <div className="w-full overflow-hidden py-16 relative bg-surface-950/50 border-t border-surface-800/50">
+      <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-surface-950 to-transparent z-10" />
+      <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-surface-950 to-transparent z-10" />
+      
+      <div className="text-center mb-8">
+        <span className="text-[11px] font-bold tracking-[0.2em] text-surface-500 uppercase">Supported Languages</span>
+      </div>
+
+      <div className="flex animate-marquee whitespace-nowrap w-max">
+        {/* Render enough items to make scrolling seamless */}
+        {[...LANGUAGES, ...LANGUAGES, ...LANGUAGES].map((lang, idx) => (
+          <div 
+            key={idx} 
+            className="inline-flex items-center justify-center px-6 py-2.5 mx-3 rounded-xl border border-surface-800 bg-surface-900/60 text-surface-300 font-semibold text-[13px] hover:text-white transition-colors"
+          >
+            {lang}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /* ── Scroll-triggered reveal ────────────────────────────────────── */
 const Reveal = ({ children, className = '', delay = 0 }) => {
@@ -172,8 +307,10 @@ const LandingPage = () => {
             </a>
           </div>
 
+          {/* Language Marquee moved below */}
+
           {/* ── Interactive Editor Mockup ──────────────────────────── */}
-          <div className="mt-24 mx-auto max-w-5xl animate-slide-up" style={{ animationDelay: '400ms' }}>
+          <div className="mt-16 mx-auto max-w-7xl animate-slide-up" style={{ animationDelay: '400ms' }}>
             <div className="relative group">
               {/* Glow effect behind */}
               <div className="absolute -inset-2 bg-gradient-to-r from-hive-600/15 via-violet-500/10 to-honey-500/15 rounded-3xl blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-700" />
@@ -214,30 +351,23 @@ const LandingPage = () => {
                   </div>
                   
                   {/* Code area */}
-                  <div className="flex-1 p-6 min-h-[280px]">
-                    <TypingCode />
-                  </div>
-
-                  {/* Chat mock */}
-                  <div className="w-56 border-l border-surface-700/20 bg-surface-900/40 hidden lg:flex flex-col">
-                    <div className="px-3 py-2.5 border-b border-surface-700/20 text-[11px] text-surface-400 font-semibold tracking-wider uppercase">Chat</div>
-                    <div className="flex-1 px-3 py-3 text-[11px] space-y-3">
-                      <div className="flex flex-col items-start">
-                        <span className="text-[9px] text-surface-500 font-medium">Alice</span>
-                        <span className="bg-surface-800/60 px-2.5 py-1.5 rounded-xl rounded-tl-sm text-surface-200 mt-0.5">Ready to pair? 🚀</span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-[9px] text-surface-500 font-medium">You</span>
-                        <span className="bg-hive-600/20 px-2.5 py-1.5 rounded-xl rounded-tr-sm text-hive-200 mt-0.5">Let's go!</span>
-                      </div>
+                  <div className="flex-1 p-8 min-h-[400px]">
+                    <div className="text-base scale-110 origin-top-left">
+                      <TypingCode />
                     </div>
                   </div>
+
+                  {/* Interactive Right Sidebar Animation */}
+                  <SidebarSequence />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Language Marquee moved here above Stats */}
+      <LanguageMarquee />
 
       {/* ── Stats Bar ────────────────────────────────────────────── */}
       <div className="border-y border-surface-700/20 bg-surface-900/30 backdrop-blur-sm">
@@ -282,7 +412,7 @@ const LandingPage = () => {
               { icon: <Terminal size={22} />, color: 'from-emerald-500/20 to-emerald-500/5', iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10 border-emerald-500/20', title: 'Instant Execution', desc: 'Run your code in isolated Docker containers. Supports Python, JS, Java, C++, and more.' },
               { icon: <Code2 size={22} />, color: 'from-sky-500/20 to-sky-500/5', iconColor: 'text-sky-400', iconBg: 'bg-sky-500/10 border-sky-500/20', title: 'Multi-file Projects', desc: 'Built-in file explorer with folder structure. Organize your code like a real IDE.' },
               { icon: <Cpu size={22} />, color: 'from-violet-500/20 to-violet-500/5', iconColor: 'text-violet-400', iconBg: 'bg-violet-500/10 border-violet-500/20', title: 'AI Assistant', desc: 'Bring your own API key and get AI-powered code suggestions, chat, and autocomplete.' },
-              { icon: <Paintbrush size={22} />, color: 'from-rose-500/20 to-rose-500/5', iconColor: 'text-rose-400', iconBg: 'bg-rose-500/10 border-rose-500/20', title: 'Whiteboard Mode', desc: 'Sketch ideas, draw diagrams, and plan architecture with a collaborative whiteboard.' },
+              { icon: <Github size={22} />, color: 'from-slate-500/20 to-slate-500/5', iconColor: 'text-surface-200', iconBg: 'bg-surface-700/50 border-surface-600', title: 'Git Integration', desc: 'Sync with GitHub to import repositories, commit code, and manage branches directly from the editor.' },
             ].map((feature, i) => (
               <Reveal key={i} delay={i * 80}>
                 <FeatureCard {...feature} />
@@ -331,20 +461,60 @@ const LandingPage = () => {
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────── */}
-      <footer className="border-t border-surface-700/20 py-12 bg-surface-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <Logo size={24} withText />
+      <footer className="border-t border-surface-700/30 pt-20 pb-10 bg-surface-950 relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-hive-900/10 blur-[150px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mb-16">
+            <div className="col-span-2 lg:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                <Logo size={32} withText />
+              </div>
+              <p className="text-surface-400 text-sm leading-relaxed max-w-sm mb-8">
+                CodeHive is the modern collaborative IDE for teams. Build, test, and ship software faster together without managing complex local environments.
+              </p>
+              <div className="flex items-center gap-4">
+                <a href="#" className="w-10 h-10 rounded-full bg-surface-800 flex items-center justify-center text-surface-300 hover:text-white hover:bg-surface-700 transition-colors">
+                  <Github size={18} />
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-surface-800 flex items-center justify-center text-surface-300 hover:text-white hover:bg-surface-700 transition-colors">
+                  <Twitter size={18} />
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-surface-800 flex items-center justify-center text-surface-300 hover:text-white hover:bg-surface-700 transition-colors">
+                  <Instagram size={18} />
+                </a>
+              </div>
             </div>
-            <p className="text-xs text-surface-500">
-              &copy; {new Date().getFullYear()} CodeHive. Built for developers, by developers.
+            
+            <div>
+              <h4 className="text-white font-semibold mb-5 tracking-tight">Resources</h4>
+              <ul className="space-y-3 text-sm text-surface-400">
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Documentation</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">API Reference</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Community</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-white font-semibold mb-5 tracking-tight">Company</h4>
+              <ul className="space-y-3 text-sm text-surface-400">
+                <li><a href="#" className="hover:text-hive-400 transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-hive-400 transition-colors">Partners</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-surface-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-surface-500">
+              &copy; {new Date().getFullYear()} CodeHive. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-xs text-surface-400">
-              <a href="#" className="hover:text-white transition-colors duration-200">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors duration-200">Terms</a>
-              <a href="#" className="hover:text-white transition-colors duration-200">Help</a>
-              <a href="https://github.com/priyanshi-chaudharyy/codehive" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors duration-200">GitHub</a>
+            <div className="flex items-center gap-6 text-sm text-surface-500">
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
             </div>
           </div>
         </div>
@@ -354,9 +524,9 @@ const LandingPage = () => {
 };
 
 const FeatureCard = ({ icon, title, desc, color, iconColor, iconBg }) => (
-  <div className="group relative rounded-2xl border border-surface-700/30 bg-surface-900/40 p-7 hover:border-surface-600/50 transition-all duration-500 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1.5 overflow-hidden">
+  <div className="group relative rounded-2xl border border-surface-700/30 bg-surface-900/40 p-7 hover:border-surface-600/50 transition-all duration-500 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1.5 overflow-hidden h-full flex flex-col">
     <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-    <div className="relative">
+    <div className="relative flex-1">
       <div className={`w-12 h-12 rounded-xl ${iconBg} border flex items-center justify-center mb-6 ${iconColor} group-hover:scale-110 transition-transform duration-500`}>
         {icon}
       </div>

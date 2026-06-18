@@ -1,4 +1,4 @@
-import { Users, Lock, Trash2, LogOut, ArrowRight } from 'lucide-react';
+import { Users, Lock, Trash2, LogOut, ArrowRight, Star } from 'lucide-react';
 import { useState } from 'react';
 
 const LANG_COLORS = {
@@ -20,12 +20,13 @@ const LANG_COLORS = {
 /**
  * Card component to display a room on the dashboard.
  */
-const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave }) => {
+const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave, onToggleStar }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   
   const ownerId = typeof room.owner === 'object' ? room.owner._id : room.owner;
   const isOwner = currentUserId === ownerId;
   const langColor = LANG_COLORS[room.language] || 'bg-surface-700 text-surface-300';
+  const onlineCount = room.onlineCount || 0;
 
   const handleAction = (e) => {
     e.stopPropagation();
@@ -38,57 +39,65 @@ const RoomCard = ({ room, currentUserId, onClick, onDelete, onLeave }) => {
     }
   };
 
+  const handleStar = (e) => {
+    e.stopPropagation();
+    if (onToggleStar) onToggleStar(room.roomId);
+  };
+
   return (
     <div 
-      className="group relative rounded-2xl border border-surface-700/25 bg-surface-900/30 hover:bg-surface-800/40 hover:border-surface-600/40 p-5 flex flex-col cursor-pointer transition-all duration-500 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1 overflow-hidden" 
+      className="group relative rounded-2xl border border-surface-800 bg-surface-900/40 hover:bg-surface-800 p-5 flex flex-col cursor-pointer transition-colors duration-300 h-full" 
       onClick={onClick}
     >
-      {/* Subtle gradient on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-hive-500/5 via-transparent to-honey-500/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
-
-      {/* Delete/Leave Action */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
+      {/* Top right actions */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         <button
-          onClick={handleAction}
-          className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all duration-200
-            ${showConfirm 
-              ? 'bg-red-500/15 text-red-400 hover:bg-red-500/25' 
-              : 'bg-surface-800/60 text-surface-400 hover:text-red-400 hover:bg-surface-700/60'
-            }`}
-          title={isOwner ? "Delete Room" : "Leave Room"}
+          onClick={handleStar}
+          className="p-1.5 rounded-lg flex items-center justify-center transition-colors bg-surface-950/50 hover:bg-surface-700 text-surface-400 hover:text-honey-400"
+          title={room.isStarred ? "Unstar Room" : "Star Room"}
         >
-          {isOwner ? <Trash2 size={13} /> : <LogOut size={13} />}
-          {showConfirm && <span>Confirm</span>}
+          <Star size={14} className={room.isStarred ? "fill-honey-400 text-honey-400" : ""} />
         </button>
       </div>
 
-      <div className="relative">
-        <div className="flex items-start justify-between mb-3">
-          <div className="pr-10">
-            <h3 className="font-semibold text-base text-white mb-1 truncate group-hover:text-hive-300 transition-colors duration-300" title={room.name}>
-              {room.name}
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-surface-400 font-mono">
-              <span>ID: {room.roomId}</span>
-              {!room.isPublic && <Lock size={11} className="text-honey-400" />}
-            </div>
-          </div>
-          <span className={`badge ${langColor} capitalize shrink-0 text-[11px] font-medium`}>
-            {room.language}
+      <div className="flex-1">
+        <h3 className="font-semibold text-lg text-white mb-2 pr-12 group-hover:text-hive-400 transition-colors line-clamp-1" title={room.name}>
+          {room.name}
+        </h3>
+        <div className="flex items-center gap-3 text-xs text-surface-400 font-mono mb-4">
+          <span className="flex items-center gap-1.5">
+            ID: {room.roomId}
+            {!room.isPublic && <Lock size={12} className="text-honey-500" />}
           </span>
         </div>
         
-        <div className="mt-auto pt-4 border-t border-surface-700/20 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm text-surface-400">
-            <Users size={13} />
-            <span className="text-xs">{room.participants?.length || 0} members</span>
+        {/* Language Pill moved here to avoid overlap */}
+        <div className="mb-5">
+          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border border-surface-700/50 ${langColor}`}>
+            {room.language}
+          </span>
+        </div>
+      </div>
+      
+      <div className="pt-4 border-t border-surface-800 flex items-center justify-between text-surface-500">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium" title="Members">
+            <Users size={14} />
+            <span>{room.participants?.length || 1}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-surface-500">
-              {new Date(room.updatedAt).toLocaleDateString()}
-            </span>
-            <ArrowRight size={14} className="text-surface-500 group-hover:text-hive-400 group-hover:translate-x-1 transition-all duration-300" />
-          </div>
+          {onlineCount > 0 && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {onlineCount} online
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-medium">
+            {new Date(room.createdAt).toLocaleDateString()}
+          </span>
+          <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-hive-400" />
         </div>
       </div>
     </div>
