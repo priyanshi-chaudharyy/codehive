@@ -9,6 +9,7 @@ import useEditor from '../hooks/useEditor';
 import useWebRTC from '../hooks/useWebRTC';
 import { roomService } from '../services/roomService';
 import { codeService } from '../services/codeService';
+import api from '../services/api';
 import showToast from '../components/shared/Toast';
 
 import Loader from '../components/shared/Loader';
@@ -109,10 +110,7 @@ const EditorPage = () => {
     if (!roomId || !user) return;
     
     const ping = () => {
-      fetch('/api/users/ping', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      }).catch(err => console.error('Ping failed:', err));
+      api.post('/users/ping').catch(err => console.error('Ping failed:', err));
     };
 
     ping(); // initial ping
