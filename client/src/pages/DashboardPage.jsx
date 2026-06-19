@@ -10,31 +10,19 @@ import RoomCard from '../components/rooms/RoomCard';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import ActivityFeed from '../components/dashboard/ActivityFeed';
 import { roomService } from '../services/roomService';
+import api from '../services/api';
 import showToast from '../components/shared/Toast';
 
 // Service to fetch user stats and activity
 const userService = {
   getStats: async () => {
-    const res = await fetch('/api/users/stats', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (!res.ok) throw new Error('Failed to fetch stats');
-    return res.json();
+    return await api.get('/users/stats');
   },
   getActivity: async () => {
-    const res = await fetch('/api/users/activity', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (!res.ok) throw new Error('Failed to fetch activity');
-    return res.json();
+    return await api.get('/users/activity');
   },
   toggleStar: async (roomId) => {
-    const res = await fetch(`/api/rooms/${roomId}/star`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (!res.ok) throw new Error('Failed to toggle star');
-    return res.json();
+    return await api.put(`/rooms/${roomId}/star`);
   }
 };
 
