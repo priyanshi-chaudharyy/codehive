@@ -1,4 +1,4 @@
-# CodeHive 🐝
+# CodeHive 
 
 ## Real-Time Collaborative IDE Platform
 
